@@ -1,4 +1,6 @@
+import { db } from '../../storage/db';
 import { GeoLocationTracker } from '../../utils/geolocation';
+import { AudioFeedback } from '../../utils/audio-helpers';
 
 export interface AdventureSessionSummary {
   minutes: number;
@@ -18,6 +20,8 @@ export class AdventureModeView {
   private distanceKm: number = 0.84;
   private discoveriesCount: number = 1;
   private timerInterval: ReturnType<typeof setInterval> | null = null;
+  private triggeredGeofences: Set<string> = new Set();
+  private lastGeofenceCheck: number = 0;
 
   constructor(
     container: HTMLElement,
@@ -38,7 +42,7 @@ export class AdventureModeView {
     const progressArc = Math.min(100, Math.round((minutes / 45) * 100));
 
     this.container.innerHTML = `
-      <div class="flex flex-col w-full pb-safe view-enter">
+      <div class="flex flex-col w-full pb-28 view-enter">
         <div class="px-margin pt-space-md flex flex-col gap-space-lg max-w-md mx-auto w-full">
           <!-- Instrument Telemetry Strip with Direct Map Jump -->
           <div class="flex items-center justify-between bg-surface-card-subtle px-space-md py-space-sm rounded-xl shadow-sm border border-outline-hairline/60 gap-2">
@@ -127,10 +131,10 @@ export class AdventureModeView {
             </div>
 
             <!-- Specimen Search Headline -->
-            <h2 class="font-headline-lg text-headline-lg text-primary max-w-[280px] leading-tight mb-space-xs font-serif">
+            <h2 class="text-lg font-semibold text-primary max-w-[280px] leading-tight mb-space-xs font-serif">
               Find Something Blue
             </h2>
-            <p class="font-latin-name text-latin-name italic text-secondary mb-space-md font-serif">
+            <p class="text-xs italic font-serif text-secondary mb-space-md">
               Cyanocitta, Gentiana, or weathered shale
             </p>
 
@@ -185,7 +189,7 @@ export class AdventureModeView {
                 <span id="pause-label">Pause</span>
               </button>
             </div>
-            <button class="w-full h-12 rounded-lg bg-primary-container text-vellum-bg font-title-md text-title-md shadow-md active:bg-secondary active:scale-[0.98] transition-all flex items-center justify-center gap-space-xs cursor-pointer" id="spotted-btn">
+            <button class="w-full h-12 rounded-lg bg-primary-container text-vellum-bg font-title-md text-title-md shadow-md active:bg-secondary active:scale-[0.98] transition-all flex items-center justify-center gap-space-xs cursor-pointer ambient-glow" id="spotted-btn">
               <span class="material-symbols-outlined text-[20px]">photo_camera</span>
               <span>I Spotted It (Capture)</span>
             </button>
@@ -228,10 +232,100 @@ export class AdventureModeView {
         const kmEl = this.container.querySelector('#adventure-km-label');
         if (kmEl) kmEl.textContent = `${this.distanceKm.toFixed(2)} km`;
       }
+
+      // Tactile Geofencing proximity audit every 4 seconds
+      if (Date.now() - this.lastGeofenceCheck > 4000) {
+        this.lastGeofenceCheck = Date.now();
+        this.checkProximityGeofencing();
+      }
     }, 1000);
 
     // Refresh GPS coordinates with hardware query
     this.refreshGpsTelemetry(false);
+    this.checkProximityGeofencing();
+  }
+
+  private haversineMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 6371000; // Earth radius in meters
+    const toRad = (deg: number) => (deg * Math.PI) / 180;
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }
+
+  private async checkProximityGeofencing(): Promise<void> {
+    try {
+      const coords = await GeoLocationTracker.getCurrentPosition(false);
+      const observations = await db.getAllObservations();
+
+      for (const obs of observations) {
+        if (!obs.coordinates) continue;
+        const dist = this.haversineMeters(
+          coords.latitude,
+          coords.longitude,
+          obs.coordinates.latitude,
+          obs.coordinates.longitude
+        );
+
+        // When active coordinates come within 50 meters of a recorded observation
+        if (dist <= 50 && !this.triggeredGeofences.has(obs.id)) {
+          this.triggeredGeofences.add(obs.id);
+          this.fireTactileGeofenceAlert(obs.commonName || 'Field Observation', Math.round(dist));
+          break;
+        }
+      }
+    } catch (e) {
+      // Quiet recovery for background sensor polling
+    }
+  }
+
+  private fireTactileGeofenceAlert(commonName: string, meters: number): void {
+    // Fire physical haptic feedback pattern: 80ms buzz, 40ms pause, 80ms buzz
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+      try {
+        navigator.vibrate([80, 40, 80]);
+      } catch {
+        // Haptics permission or platform unsupported
+      }
+    }
+
+    AudioFeedback.playTone('save');
+
+    // Surface subtle notification toast
+    let toast = this.container.querySelector('#geofence-alert-toast') as HTMLElement;
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'geofence-alert-toast';
+      toast.className = 'fixed top-14 inset-x-4 z-50 transition-all duration-300 transform -translate-y-4 opacity-0 pointer-events-none max-w-sm mx-auto';
+      this.container.appendChild(toast);
+    }
+
+    toast.innerHTML = `
+      <div class="bg-primary text-vellum-bg px-3.5 py-2.5 rounded-xl shadow-2xl border border-tertiary-fixed-dim/40 flex items-center gap-3 backdrop-blur-md">
+        <div class="w-8 h-8 rounded-full bg-amber-container text-amber-on-container flex items-center justify-center shrink-0">
+          <span class="material-symbols-outlined text-[18px]">explore</span>
+        </div>
+        <div class="flex flex-col min-w-0 flex-1">
+          <span class="text-[10px] font-mono uppercase tracking-wider text-tertiary-fixed-dim font-bold">Tactile Geofence · ${meters}m</span>
+          <span class="text-xs font-semibold truncate leading-tight">Entering habitat sector of ${commonName}</span>
+        </div>
+      </div>
+    `;
+
+    // Slide in
+    requestAnimationFrame(() => {
+      toast.classList.remove('-translate-y-4', 'opacity-0', 'pointer-events-none');
+      toast.classList.add('translate-y-0', 'opacity-100');
+    });
+
+    setTimeout(() => {
+      toast.classList.add('-translate-y-4', 'opacity-0', 'pointer-events-none');
+      toast.classList.remove('translate-y-0', 'opacity-100');
+    }, 4500);
   }
 
   private async refreshGpsTelemetry(forceFresh = false): Promise<void> {

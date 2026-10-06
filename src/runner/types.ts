@@ -25,6 +25,17 @@ export interface ModelRunnerProgress {
   progressPercent: number;
 }
 
+export interface NaturalistInsightResult {
+  nativeStatus: string;
+  ecologicalRole?: string;
+  foragingNotes?: string;
+  seasonalIndicators: string;
+  conservationStatus?: string;
+  naturalistTips?: string;
+  rawInsight?: string;
+  modelUsed?: string;
+}
+
 export interface ModelRunnerInterface {
   readonly id: string;
   readonly name: string;
@@ -35,4 +46,5 @@ export interface ModelRunnerInterface {
   transcribeAudio(audioBlob: Blob): Promise<AudioTranscriptionResult>;
   extractFieldEntities(transcript: string): Promise<ExtractedFieldEntities>;
   generateEmbedding(text: string): Promise<number[]>;
+  queryNaturalistContext?(specimenName: string, scientificName?: string): Promise<NaturalistInsightResult>;
 }

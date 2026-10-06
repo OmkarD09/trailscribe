@@ -98,6 +98,30 @@ const SPECIES_KNOWLEDGE: SpeciesPattern[] = [
 
   // AVES
   {
+    name: 'Oriental Dwarf Kingfisher',
+    scientificName: 'Ceyx erithaca',
+    kingdom: 'Aves',
+    keywords: [/oriental\s*dwarf\s*kingfisher/i, /black-?backed\s*kingfisher/i, /three-?toed\s*kingfisher/i, /ceyx\s*erithaca/i, /ceyx/i, /jewel\s*of\s*the\s*forest/i]
+  },
+  {
+    name: 'Malabar Trogon',
+    scientificName: 'Harpactes fasciatus',
+    kingdom: 'Aves',
+    keywords: [/malabar\s*trogon/i, /trogon/i, /harpactes/i, /crimson\s*belly/i, /black\s*hood/i]
+  },
+  {
+    name: 'Asian Koel',
+    scientificName: 'Eudynamys scolopaceus',
+    kingdom: 'Aves',
+    keywords: [/asian\s*koel/i, /koel/i, /eudynamys/i, /cuckoo/i]
+  },
+  {
+    name: 'White-throated Kingfisher',
+    scientificName: 'Halcyon smyrnensis',
+    kingdom: 'Aves',
+    keywords: [/kingfisher/i, /halcyon/i, /white-?throated\s*kingfisher/i]
+  },
+  {
     name: 'Black-capped Chickadee',
     scientificName: 'Poecile atricapillus',
     kingdom: 'Aves',
@@ -130,6 +154,12 @@ const SPECIES_KNOWLEDGE: SpeciesPattern[] = [
 
   // ANIMALIA / REPTILES / AMPHIBIANS
   {
+    name: 'Indian Palm Squirrel',
+    scientificName: 'Funambulus palmarum',
+    kingdom: 'Animalia',
+    keywords: [/palm\s*squirrel/i, /squirrel/i, /funambulus/i]
+  },
+  {
     name: 'Rough-skinned Newt',
     scientificName: 'Taricha granulosa',
     kingdom: 'Animalia',
@@ -161,6 +191,12 @@ const SPECIES_KNOWLEDGE: SpeciesPattern[] = [
   },
 
   // INSECTA
+  {
+    name: 'Common Mormon',
+    scientificName: 'Papilio polytes',
+    kingdom: 'Insecta',
+    keywords: [/common\s*mormon/i, /mormon/i, /papilio/i, /butterfly/i, /swallowtail/i]
+  },
   {
     name: 'Yellow-faced Bumblebee',
     scientificName: 'Bombus vosnesenskii',

@@ -1,5 +1,7 @@
 import { db } from '../../storage/db';
 import { AudioFeedback } from '../../utils/audio-helpers';
+import { getModelRunner } from '../../runner';
+import { FieldEntityParser } from '../../runner/parser';
 import type { FieldObservation } from '../../storage/types';
 
 export class SoundIdentificationView {
@@ -24,14 +26,14 @@ export class SoundIdentificationView {
 
   render(): void {
     this.container.innerHTML = `
-      <div class="flex flex-col w-full pb-safe view-enter">
+      <div class="flex flex-col w-full pb-28 view-enter">
         <!-- Status Context Ribbon -->
         <div class="px-margin pt-space-sm pb-space-xs flex items-center justify-between">
           <div class="flex items-center gap-space-xs">
             <span class="w-2 h-2 rounded-full bg-amber-on-container animate-ping" id="audio-sensor-ping"></span>
             <span class="font-label-sm text-label-sm text-primary uppercase tracking-widest font-bold" id="audio-sensor-status">Acoustic Sensor Active</span>
           </div>
-          <button id="toggle-mic-btn" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container-high text-on-surface-variant shadow-sm hover:bg-surface-container active:scale-95 transition-all cursor-pointer">
+          <button id="toggle-mic-btn" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container-high text-on-surface-variant shadow-sm hover:bg-surface-container active:scale-95 transition-all cursor-pointer audio-ripple">
             <span class="material-symbols-outlined text-[13px] text-secondary">mic</span>
             <span class="font-label-sm text-label-sm font-bold tracking-tight" id="mic-feed-label">48.2 kHz Raw Feed</span>
           </button>
@@ -164,10 +166,30 @@ export class SoundIdentificationView {
           </div>
         </div>
 
+        <!-- Voice Audio Transcript & Field Annotation by Gemma 2:2B -->
+        <div class="px-margin mt-space-sm">
+          <div class="bg-surface-card rounded-xl p-space-md shadow-sm border border-outline-hairline/60 flex flex-col gap-2">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-1.5 text-primary">
+                <span class="material-symbols-outlined text-[18px] text-tertiary-fixed-dim">mic_double</span>
+                <span class="font-label-sm text-label-sm font-bold uppercase tracking-wider">VOICE FIELD LOG & TRANSCRIPT</span>
+              </div>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-semibold" id="transcription-status">Gemma 2:2B NER</span>
+            </div>
+            <textarea id="sound-transcript-input" class="w-full bg-surface-container text-on-surface font-body-sm text-body-sm rounded-lg p-2.5 outline-none resize-none border border-outline-hairline/80 focus:border-tertiary-fixed" rows="2" placeholder="Record or type voice field transcript...">Bio-acoustic territory vocalization recorded via on-device condenser sensor. 2 adult Asian Koels in banyan canopy near moist foliage.</textarea>
+            <div id="audio-entity-chips" class="flex flex-wrap gap-1.5 pt-0.5">
+              <span class="px-2 py-0.5 rounded-full bg-secondary-container text-primary text-[11px] font-semibold">Count: 2</span>
+              <span class="px-2 py-0.5 rounded-full bg-amber-container text-amber-on-container text-[11px] font-semibold">Substrate: banyan canopy</span>
+              <span class="px-2 py-0.5 rounded-full bg-sage-fill text-primary text-[11px] font-semibold">Habitat: moist foliage</span>
+              <span class="px-2 py-0.5 rounded-full bg-surface-container-high text-primary text-[11px] font-semibold">Life Stage: adult</span>
+            </div>
+          </div>
+        </div>
+
         <!-- Field Controls & Archival Action Strip -->
         <div class="px-margin mt-space-md flex flex-col gap-space-sm">
           <!-- Action Trigger (48px primary button) -->
-          <button class="w-full h-12 rounded-lg bg-primary-container text-vellum-bg font-title-md text-title-md flex items-center justify-center gap-2 shadow-md active:bg-secondary active:scale-[0.99] transition-all cursor-pointer" id="addJournalBtn">
+          <button class="w-full h-12 rounded-lg bg-primary-container text-vellum-bg font-title-md text-title-md flex items-center justify-center gap-2 shadow-md active:bg-secondary active:scale-[0.99] transition-all cursor-pointer ambient-glow" id="addJournalBtn">
             <span class="material-symbols-outlined text-[20px]">library_add</span>
             <span>ADD TO JOURNAL</span>
           </button>
@@ -191,6 +213,50 @@ export class SoundIdentificationView {
   }
 
   private bindEvents(): void {
+    const transcriptInput = this.container.querySelector('#sound-transcript-input') as HTMLTextAreaElement | null;
+    const chipsContainer = this.container.querySelector('#audio-entity-chips');
+    const runner = getModelRunner();
+
+    const parseAndRenderTranscript = async () => {
+      if (!transcriptInput || !chipsContainer) return;
+      const text = transcriptInput.value.trim();
+      if (!text) {
+        chipsContainer.innerHTML = '';
+        return;
+      }
+      try {
+        const entities = await runner.extractFieldEntities(text);
+        const chips: string[] = [];
+        if (entities.abundanceCount && entities.abundanceCount > 0) {
+          chips.push(`<span class="px-2 py-0.5 rounded-full bg-secondary-container text-primary text-[11px] font-semibold">Count: ${entities.abundanceCount}</span>`);
+        }
+        if (entities.substrate) {
+          chips.push(`<span class="px-2 py-0.5 rounded-full bg-amber-container text-amber-on-container text-[11px] font-semibold">Substrate: ${entities.substrate}</span>`);
+        }
+        if (entities.habitat) {
+          chips.push(`<span class="px-2 py-0.5 rounded-full bg-sage-fill text-primary text-[11px] font-semibold">Habitat: ${entities.habitat}</span>`);
+        }
+        if (entities.lifeStage) {
+          chips.push(`<span class="px-2 py-0.5 rounded-full bg-surface-container-high text-primary text-[11px] font-semibold">Life Stage: ${entities.lifeStage}</span>`);
+        }
+        if (entities.speciesCandidates?.length > 0) {
+          chips.push(`<span class="px-2 py-0.5 rounded-full bg-tertiary-fixed-dim/20 text-tertiary text-[11px] font-semibold">Taxa: ${entities.speciesCandidates[0]}</span>`);
+        }
+        chipsContainer.innerHTML = chips.join('');
+      } catch {
+        const fallback = FieldEntityParser.parse(text);
+        const chips: string[] = [];
+        if (fallback.abundanceCount) chips.push(`<span class="px-2 py-0.5 rounded-full bg-secondary-container text-primary text-[11px] font-semibold">Count: ${fallback.abundanceCount}</span>`);
+        if (fallback.substrate) chips.push(`<span class="px-2 py-0.5 rounded-full bg-amber-container text-amber-on-container text-[11px] font-semibold">Substrate: ${fallback.substrate}</span>`);
+        if (fallback.habitat) chips.push(`<span class="px-2 py-0.5 rounded-full bg-sage-fill text-primary text-[11px] font-semibold">Habitat: ${fallback.habitat}</span>`);
+        chipsContainer.innerHTML = chips.join('');
+      }
+    };
+
+    transcriptInput?.addEventListener('input', () => {
+      parseAndRenderTranscript();
+    });
+
     const addBtn = this.container.querySelector('#addJournalBtn');
     if (addBtn) {
       addBtn.addEventListener('click', async () => {
@@ -200,23 +266,31 @@ export class SoundIdentificationView {
 
         AudioFeedback.playTone('save');
 
-        // Commit observation into db
+        const transcriptText = transcriptInput?.value.trim() || 'Bio-acoustic territory vocalization recorded via on-device condenser sensor. 2 adult Asian Koels in banyan canopy near moist foliage.';
+        let entities: any = null;
+        try {
+          entities = await runner.extractFieldEntities(transcriptText);
+        } catch {
+          entities = FieldEntityParser.parse(transcriptText);
+        }
+
+        // Commit observation into db with real extracted field entities
         const soundObs: FieldObservation = {
           id: `sound-${Date.now()}`,
           timestamp: Date.now(),
           readableDate: `Today · ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
           coordinates: { latitude: 18.9553, longitude: 72.8055, accuracy: 5 },
           photoUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuC63PjgUioWhD_BoFXGkSv8Fc2oRzJNBmtmUrfsIiKXC1DzdREby8XET9p4bIPxPdxr-QyEzD4rYFYvDIZi0Mmx7Q8HObi3dUIVBTIfv2FryFDdTaVg7WhScZHYtzRgPptyc9-finMJgnmh8Y1sZTzvZZOcubV5IZi91viUSswT7mRe51jq-BXObc9gOCPv_II9rLbx4OmxKJSykvrAPjsaPAsqAVmviTiwQ4WaAg2HpGO5ZiGyr0ct',
-          speciesCandidates: ['Asian Koel', 'Eudynamys scolopaceus'],
-          commonName: 'Asian Koel (Acoustic Call)',
-          scientificName: 'Eudynamys scolopaceus',
+          speciesCandidates: entities?.speciesCandidates?.length ? entities.speciesCandidates : ['Asian Koel', 'Eudynamys scolopaceus'],
+          commonName: entities?.commonName && entities.commonName !== 'General Field Note' ? entities.commonName : 'Asian Koel (Acoustic Call)',
+          scientificName: entities?.scientificName || 'Eudynamys scolopaceus',
           confidenceScore: 0.91,
-          kingdomOrGroup: 'Aves',
-          habitat: 'Acoustic canopy recording · Hanging Gardens',
-          substrate: 'Ficus benghalensis branch',
-          abundanceCount: 1,
-          lifeStage: 'adult',
-          fieldNotes: 'Bio-acoustic territory vocalization recorded via on-device condenser sensor. 2.4 kHz dominant peak with ascending harmonic trill.',
+          kingdomOrGroup: entities?.kingdomOrGroup || 'Aves',
+          habitat: entities?.habitat || 'Acoustic canopy recording · Hanging Gardens',
+          substrate: entities?.substrate || 'Ficus benghalensis branch',
+          abundanceCount: entities?.abundanceCount || 2,
+          lifeStage: entities?.lifeStage || 'adult',
+          fieldNotes: transcriptText,
           synced: false
         };
 

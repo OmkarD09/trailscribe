@@ -1,4 +1,4 @@
-import { db } from './db';
+import { db } from './db.ts';
 
 export interface SyncProgress {
   status: 'idle' | 'syncing' | 'synced' | 'error' | 'offline';
@@ -43,6 +43,7 @@ export class CloudSyncManager {
   /**
    * Syncs unsynced observations. In offline/on-device mode,
    * simulates a resilient sync batch that marks records as synced in IndexedDB.
+   * If network drops or is offline, preserves local records with clean rollback.
    */
   static async syncObservations(): Promise<{ synced: number; failed: number }> {
     if (this.isSyncing) return { synced: 0, failed: 0 };
@@ -52,6 +53,17 @@ export class CloudSyncManager {
       const all = await db.getAllObservations();
       const unsynced = all.filter((obs) => !obs.synced);
 
+      // Check online status
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+        this.notify({
+          status: 'offline',
+          pendingCount: unsynced.length,
+          syncedCount: all.length - unsynced.length,
+          message: 'Device offline. Observations preserved in IndexedDB queue.'
+        });
+        return { synced: 0, failed: unsynced.length };
+      }
+
       this.notify({
         status: 'syncing',
         pendingCount: unsynced.length,
@@ -60,12 +72,28 @@ export class CloudSyncManager {
       });
 
       // Small delay to provide realistic tactile feedback
-      await new Promise((resolve) => setTimeout(resolve, 600));
+      await new Promise((resolve) => setTimeout(resolve, 300));
 
-      let syncedCount = 0;
-      for (const obs of unsynced) {
-        await db.updateObservation(obs.id, { synced: true });
-        syncedCount++;
+      const successfullySyncedIds: string[] = [];
+
+      try {
+        for (const obs of unsynced) {
+          // Mid-sync dropout check
+          if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+            throw new Error('Network disconnected during sync batch');
+          }
+          await db.updateObservation(obs.id, { synced: true });
+          successfullySyncedIds.push(obs.id);
+        }
+      } catch (batchErr) {
+        // Rollback any records modified in this interrupted batch
+        console.warn('Interrupted sync batch, rolling back:', batchErr);
+        for (const id of successfullySyncedIds) {
+          try {
+            await db.updateObservation(id, { synced: false });
+          } catch {}
+        }
+        throw batchErr;
       }
 
       this.lastSynced = Date.now();
@@ -76,19 +104,20 @@ export class CloudSyncManager {
         pendingCount: 0,
         syncedCount: totalCount,
         lastSyncedTimestamp: this.lastSynced,
-        message: `Successfully synchronized ${syncedCount} observations`
+        message: `Successfully synchronized ${successfullySyncedIds.length} observations`
       });
 
-      return { synced: syncedCount, failed: 0 };
+      return { synced: successfullySyncedIds.length, failed: 0 };
     } catch (err) {
       console.error('Sync error:', err);
+      const pending = await this.getPendingCount();
       this.notify({
         status: 'error',
-        pendingCount: await this.getPendingCount(),
+        pendingCount: pending,
         syncedCount: 0,
-        message: 'Sync failed: network unreachable or offline'
+        message: 'Sync interrupted: network dropped or offline. Zero data loss.'
       });
-      return { synced: 0, failed: 1 };
+      return { synced: 0, failed: pending };
     } finally {
       this.isSyncing = false;
     }

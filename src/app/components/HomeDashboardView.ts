@@ -30,7 +30,7 @@ export class HomeDashboardView {
     const recentItems = await db.getRecentObservations(3);
     const totalCount = await db.getCount();
     this.container.innerHTML = `
-      <div class="flex flex-col w-full px-margin pb-space-lg space-y-space-md view-enter">
+      <div class="flex flex-col w-full px-margin pb-28 space-y-space-md view-enter">
         <!-- Greeting & Environmental Status Bar -->
         <section class="flex items-end justify-between pt-space-xs">
           <div class="flex flex-col min-w-0">

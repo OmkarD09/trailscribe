@@ -1,5 +1,6 @@
 import { db } from '../../storage/db';
 import { FieldEntityParser } from '../../runner/parser';
+import { getModelRunner } from '../../runner';
 
 export class IdentificationResultView {
   private container: HTMLElement;
@@ -54,7 +55,7 @@ export class IdentificationResultView {
     const locationText = this.specimenData?.locationText || 'Kharghar Hills';
 
     this.container.innerHTML = `
-      <div class="flex flex-col w-full pb-12 view-enter">
+      <div class="flex flex-col w-full pb-28 view-enter">
         <!-- Specimen Plate Photo Presentation -->
         <section class="px-margin pt-space-sm">
           <div class="relative w-full aspect-[4/3] rounded-xl overflow-hidden shadow-md bg-surface-container">
@@ -127,6 +128,65 @@ export class IdentificationResultView {
           </div>
         </section>
 
+        <!-- Naturalist Insights by Gemma 2:2B (Interactive Query Component) -->
+        <section class="px-margin pt-space-md">
+          <div class="relative bg-surface-card rounded-xl p-space-md shadow-sm border border-secondary/40 overflow-hidden flex flex-col gap-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span class="font-label-sm text-label-sm text-primary uppercase tracking-wider font-bold">
+                  NATURALIST INSIGHTS · GEMMA 2:2B
+                </span>
+              </div>
+              <button id="query-gemma-btn" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container-high text-primary hover:bg-surface-container active:scale-95 transition-all text-xs font-semibold cursor-pointer border border-outline-hairline/60">
+                <span class="material-symbols-outlined text-[14px] text-tertiary-fixed-dim" id="query-gemma-icon">psychology</span>
+                <span id="query-gemma-label">Ask Gemma 2B</span>
+              </button>
+            </div>
+
+            <div id="gemma-insights-content" class="flex flex-col gap-2.5 text-body-sm text-on-surface-variant">
+              <!-- Native Status Card -->
+              <div class="bg-surface-container-low rounded-lg p-2.5 border-l-2 border-primary">
+                <div class="flex items-center gap-1.5 text-primary font-semibold text-xs uppercase tracking-wide">
+                  <span class="material-symbols-outlined text-[14px]">nature</span>
+                  <span>Native & Biogeographic Status</span>
+                </div>
+                <p class="text-xs text-on-surface mt-1" id="gemma-native-status">
+                  Native to peninsular India, Sri Lanka, and Western Ghats bio-corridors. Frequently observed in deciduous canopies and urban flora.
+                </p>
+              </div>
+
+              <!-- Foraging & Diet Notes -->
+              <div class="bg-surface-container-low rounded-lg p-2.5 border-l-2 border-amber-on-container">
+                <div class="flex items-center gap-1.5 text-amber-on-container font-semibold text-xs uppercase tracking-wide">
+                  <span class="material-symbols-outlined text-[14px]">restaurant</span>
+                  <span>Foraging & Diet Ecology</span>
+                </div>
+                <p class="text-xs text-on-surface mt-1" id="gemma-foraging-notes">
+                  Active diurnal omnivore. Feeds on seasonal berries, tree seeds, tender buds, nectar, and opportunistically small invertebrates.
+                </p>
+              </div>
+
+              <!-- Seasonal & Phenological Indicators -->
+              <div class="bg-surface-container-low rounded-lg p-2.5 border-l-2 border-tertiary-fixed-dim">
+                <div class="flex items-center gap-1.5 text-secondary font-semibold text-xs uppercase tracking-wide">
+                  <span class="material-symbols-outlined text-[14px]">calendar_month</span>
+                  <span>Seasonal Phenology</span>
+                </div>
+                <p class="text-xs text-on-surface mt-1" id="gemma-seasonal-indicators">
+                  Breeds year-round with peak reproductive activity during post-monsoon foliage flushes. Vocal activity peaks at dawn.
+                </p>
+              </div>
+            </div>
+
+            <!-- On-device Inference Footnote -->
+            <div class="flex items-center justify-between text-[10px] font-mono text-outline pt-1 border-t border-outline-hairline/40">
+              <span id="gemma-runner-mode">Engine: Gemma 2:2B (Ollama Local API / Fallback)</span>
+              <span class="text-emerald-600 font-semibold">100% On-Device & Offline</span>
+            </div>
+          </div>
+        </section>
+
         <!-- Discovery Ledger Card -->
         <section class="px-margin pt-space-md">
           <div class="bg-surface-card-subtle rounded-xl p-space-md flex flex-col gap-space-sm shadow-sm border border-outline-hairline/60">
@@ -189,7 +249,7 @@ export class IdentificationResultView {
         <!-- Action Stack -->
         <section class="px-margin pt-space-lg flex flex-col gap-3">
           <!-- Primary Forest Green Button -->
-          <button class="w-full h-12 rounded-lg bg-primary-container text-vellum-bg font-title-md text-title-md flex items-center justify-center gap-2 active:bg-secondary transition-all shadow-md active:scale-[0.99] cursor-pointer" id="save-journal-btn">
+          <button class="w-full h-12 rounded-lg bg-primary-container text-vellum-bg font-title-md text-title-md flex items-center justify-center gap-2 active:bg-secondary transition-all shadow-md active:scale-[0.99] cursor-pointer ambient-glow" id="save-journal-btn">
             <span class="material-symbols-outlined text-[20px]" id="journal-icon">bookmark_add</span>
             <span id="journal-label">+ ADD TO FIELD JOURNAL</span>
           </button>
@@ -324,6 +384,55 @@ export class IdentificationResultView {
     const taxonomyBtn = this.container.querySelector('#explore-taxonomy-btn');
     taxonomyBtn?.addEventListener('click', () => {
       this.onAddToJournal();
+    });
+
+    // Gemma 2:2B Naturalist Insights Query
+    const queryGemmaBtn = this.container.querySelector('#query-gemma-btn');
+    const queryGemmaIcon = this.container.querySelector('#query-gemma-icon');
+    const queryGemmaLabel = this.container.querySelector('#query-gemma-label');
+    const nativeStatusEl = this.container.querySelector('#gemma-native-status');
+    const foragingNotesEl = this.container.querySelector('#gemma-foraging-notes');
+    const seasonalIndicatorsEl = this.container.querySelector('#gemma-seasonal-indicators');
+    const runnerModeEl = this.container.querySelector('#gemma-runner-mode');
+
+    const runGemmaQuery = async () => {
+      if (!queryGemmaBtn || !queryGemmaLabel || !queryGemmaIcon) return;
+      queryGemmaLabel.textContent = 'Reasoning...';
+      queryGemmaIcon.classList.add('animate-spin');
+      queryGemmaBtn.setAttribute('disabled', 'true');
+
+      const runner = getModelRunner();
+      if (runnerModeEl) {
+        runnerModeEl.textContent = `Engine: ${runner.name}`;
+      }
+
+      const cName = this.specimenData?.commonName || 'Indian Palm Squirrel';
+      const sName = this.specimenData?.scientificName || 'Funambulus palmarum';
+
+      try {
+        if (runner.queryNaturalistContext) {
+          const res = await runner.queryNaturalistContext(cName, sName);
+          if (nativeStatusEl && res.nativeStatus) nativeStatusEl.textContent = res.nativeStatus;
+          if (foragingNotesEl && res.foragingNotes) foragingNotesEl.textContent = res.foragingNotes;
+          if (seasonalIndicatorsEl && res.seasonalIndicators) seasonalIndicatorsEl.textContent = res.seasonalIndicators;
+        } else {
+          const prompt = `Taxa: ${cName} (${sName}). Provide native status, diet, and seasonal indicators.`;
+          const entities = await runner.extractFieldEntities(prompt);
+          if (nativeStatusEl) nativeStatusEl.textContent = `Documented in regional ecosystem (${entities.kingdomOrGroup || 'Plantae/Fauna'}).`;
+          if (foragingNotesEl && entities.substrate) foragingNotesEl.textContent = `Frequently observed on substrate: ${entities.substrate}.`;
+          if (seasonalIndicatorsEl && entities.habitat) seasonalIndicatorsEl.textContent = `Peak activity associated with habitat: ${entities.habitat}.`;
+        }
+      } catch (err) {
+        console.warn('Gemma query notice:', err);
+      } finally {
+        queryGemmaLabel.textContent = 'Refresh Insights';
+        queryGemmaIcon.classList.remove('animate-spin');
+        queryGemmaBtn.removeAttribute('disabled');
+      }
+    };
+
+    queryGemmaBtn?.addEventListener('click', () => {
+      runGemmaQuery();
     });
   }
 

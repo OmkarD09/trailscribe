@@ -4,8 +4,8 @@ import type {
   ModelRunnerProgress,
   AudioTranscriptionResult,
   ExtractedFieldEntities
-} from './types';
-import { FieldEntityParser } from './parser';
+} from './types.ts';
+import { FieldEntityParser } from './parser.ts';
 
 export class MockModelRunner implements ModelRunnerInterface {
   readonly id = 'mock-runner';
@@ -48,5 +48,14 @@ export class MockModelRunner implements ModelRunnerInterface {
     norm = Math.sqrt(norm) || 1;
     for (let i = 0; i < dimensions; i++) vector[i] /= norm;
     return Array.from(vector);
+  }
+
+  async queryNaturalistContext(specimenName: string, scientificName?: string): Promise<{ nativeStatus: string; foragingNotes: string; seasonalIndicators: string; rawInsight: string }> {
+    return {
+      nativeStatus: `Native to regional bio-corridor (${specimenName})`,
+      foragingNotes: `Active forager across primary canopy and detritus layer. Feeds on seasonal mast, insects, and fruits.`,
+      seasonalIndicators: `Elevated behavioral presence detected during pre-monsoon and post-monsoon cycles.`,
+      rawInsight: `${specimenName} (${scientificName || 'Taxa'}) displays classic habitat adaptation markers. Local observation verified.`
+    };
   }
 }

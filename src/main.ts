@@ -219,25 +219,27 @@ class TrailScribeApp {
             .join('')}
         </div>
       </div>
-
-      <!-- Quick Screen Navigator Floating Pill -->
-      <button id="matrix-toggle-pill" class="fixed top-20 right-3 z-40 px-2.5 py-1 rounded-full bg-obsidian-scrim/80 hover:bg-obsidian-scrim backdrop-blur-md text-tertiary-fixed-dim text-[11px] font-mono tracking-wider shadow-lg flex items-center gap-1.5 border border-tertiary-fixed-dim/30 cursor-pointer active:scale-95 transition-all" title="Open Stitch Screen Matrix">
-        <span class="material-symbols-outlined text-[14px]">grid_view</span>
-        <span>10 Screens</span>
-      </button>
     `;
 
     this.bindGlobalEvents();
 
-    // Hash-based routing initialization
-    const hash = window.location.hash.replace(/^#\/?/, '') as ScreenId;
-    const initialScreen = hash && SCREENS[hash] ? hash : 'field-hub';
+    // Hash-based routing initialization with alias support
+    const resolveScreenId = (raw: string): ScreenId => {
+      const clean = (raw || '').replace(/^#\/?/, '').trim();
+      if (clean === 'nature-scanner' || clean === 'scanner' || clean === 'camera') return 'specimen-capture';
+      if (clean === 'map') return 'offline-map';
+      if (clean === 'journal' || clean === 'folio') return 'field-journal';
+      if (clean && SCREENS[clean as ScreenId]) return clean as ScreenId;
+      return 'field-hub';
+    };
+
+    const initialScreen = resolveScreenId(window.location.hash);
     this.navigateTo(initialScreen, false);
 
     window.addEventListener('hashchange', () => {
-      const targetHash = window.location.hash.replace(/^#\/?/, '') as ScreenId;
-      if (targetHash && SCREENS[targetHash] && targetHash !== this.currentScreen) {
-        this.navigateTo(targetHash, false);
+      const targetScreen = resolveScreenId(window.location.hash);
+      if (targetScreen !== this.currentScreen) {
+        this.navigateTo(targetScreen, false);
       }
     });
   }
@@ -567,6 +569,26 @@ class TrailScribeApp {
     }
 
     switch (specimenId) {
+      case 'oriental-dwarf-kingfisher':
+        return {
+          commonName: 'Oriental Dwarf Kingfisher',
+          scientificName: 'Ceyx erithaca',
+          photoUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDCUa7mlEqL-Zl5MFy4hnfhdb1rSjhFiMP1X2DNG6Vo5QovjzpAhGZsqbSaUoPeyOcac-PgnfeM8FFl_kPrsPvaOnNMTifalb_GSZB8s5oB8VO9tc_ONVjzW9A-j8k015iT3EKJtrBT4ayxnjnMgbAmtNRkMPd-wXFa8Lfohw3pwxzB24U3-dsErWXk_cjLbviD12wqubyzkz1azwasGYEuckAoJmtzvlJmLCNsWLQbH_kn2pvGy8vb',
+          confidence: 97,
+          locationText: 'Chiplun Forest Stream',
+          coordsText: '18.9167° N, 73.3333° E',
+          timeText: '09:15 AM'
+        };
+      case 'malabar-trogon':
+        return {
+          commonName: 'Malabar Trogon',
+          scientificName: 'Harpactes fasciatus',
+          photoUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDCUa7mlEqL-Zl5MFy4hnfhdb1rSjhFiMP1X2DNG6Vo5QovjzpAhGZsqbSaUoPeyOcac-PgnfeM8FFl_kPrsPvaOnNMTifalb_GSZB8s5oB8VO9tc_ONVjzW9A-j8k015iT3EKJtrBT4ayxnjnMgbAmtNRkMPd-wXFa8Lfohw3pwxzB24U3-dsErWXk_cjLbviD12wqubyzkz1azwasGYEuckAoJmtzvlJmLCNsWLQbH_kn2pvGy8vb',
+          confidence: 96,
+          locationText: 'Khandala Sub-Canopy',
+          coordsText: '19.0438° N, 73.0674° E',
+          timeText: '11:20 AM'
+        };
       case 'asian-koel':
         return {
           commonName: 'Asian Koel',

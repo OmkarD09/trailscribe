@@ -29,7 +29,7 @@ export class FieldJournalView {
     ).length;
 
     this.container.innerHTML = `
-      <div class="flex flex-col w-full view-enter">
+      <div class="flex flex-col w-full pb-28 view-enter">
         <div class="px-margin pt-space-md pb-space-xs">
           <div class="flex items-center justify-between gap-space-sm">
             <span class="font-label-sm text-label-sm tracking-widest uppercase text-tertiary-fixed-dim bg-primary-container px-2.5 py-0.5 rounded-full font-bold">Folio Vol. IV</span>

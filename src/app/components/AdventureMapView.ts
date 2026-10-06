@@ -97,7 +97,7 @@ export class AdventureMapView {
     const elapsedMinutes = Math.min(120, Math.max(25, validObs.length * 8));
 
     this.container.innerHTML = `
-      <div class="flex flex-col w-full relative view-enter">
+      <div class="flex flex-col w-full relative pb-28 view-enter">
         <!-- Interactive Topographic Canvas Container -->
         <div class="relative w-full h-[520px] overflow-hidden bg-surface-container" id="map-viewport-box">
           <!-- Real Interactive Leaflet Map Instance -->

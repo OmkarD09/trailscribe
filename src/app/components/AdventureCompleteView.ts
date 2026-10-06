@@ -39,7 +39,7 @@ export class AdventureCompleteView {
     const recentObservations = await db.getRecentObservations(6);
 
     this.container.innerHTML = `
-      <div class="flex flex-col w-full pb-safe view-enter">
+      <div class="flex flex-col w-full pb-28 view-enter">
         <div class="px-margin pt-space-md flex flex-col items-center text-center">
           <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary-container text-on-secondary-container shadow-sm mb-space-sm">
             <span class="w-2 h-2 rounded-full bg-secondary"></span>

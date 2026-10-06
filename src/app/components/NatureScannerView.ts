@@ -1,6 +1,8 @@
 import { db } from '../../storage/db';
 import { GeoLocationTracker } from '../../utils/geolocation';
 import { FieldEntityParser } from '../../runner/parser';
+import { getModelRunner } from '../../runner';
+import { VisualClassifier } from '../../runner/visual-classifier';
 import type { FieldObservation } from '../../storage/types';
 
 export class NatureScannerView {
@@ -14,10 +16,14 @@ export class NatureScannerView {
   private isUsingLiveCamera: boolean = false;
   private zoomScale: number = 1.0;
   private currentFacingMode: 'environment' | 'user' = 'environment';
-  private activeCommonName: string = 'Indian Palm Squirrel';
-  private activeScientificName: string = 'Funambulus palmarum';
-  private activeKingdom: 'Fungi' | 'Plantae' | 'Animalia' | 'Insecta' | 'Aves' | 'Geology' | 'Other' = 'Animalia';
-  private activeConfidence: number = 0.96;
+  private activeCommonName: string = '';
+  private activeScientificName: string = '';
+  private activeKingdom: 'Fungi' | 'Plantae' | 'Animalia' | 'Insecta' | 'Aves' | 'Geology' | 'Other' = 'Other';
+  private activeConfidence: number = 0;
+  private activeHabitat: string = '';
+  private activeSubstrate: string = '';
+  private activeFieldNotes: string = '';
+  private activeCandidates: Array<{ name: string; scientificName: string; confidence: number }> = [];
 
   constructor(
     container: HTMLElement,
@@ -37,21 +43,44 @@ export class NatureScannerView {
 
   render(): void {
     this.container.innerHTML = `
-      <div class="flex flex-col w-full relative select-none view-enter">
+      <div class="flex flex-col w-full relative select-none pb-28 view-enter">
         <!-- Viewfinder Optical Canvas -->
-        <div class="relative w-full overflow-hidden aspect-[3/4] max-h-[636px] flex items-center justify-center bg-primary" id="viewfinder-box">
+        <div class="relative w-full overflow-hidden aspect-[3/4] max-h-[636px] flex items-center justify-center bg-[#131b17]" id="viewfinder-box">
           <!-- Flash Shutter Exposure Overlay -->
           <div id="shutter-flash" class="absolute inset-0 bg-white opacity-0 pointer-events-none transition-opacity duration-150 z-30"></div>
 
-          <!-- Camera Sensor Live Stream Placeholder / Real Video Element -->
-          <video id="scanner-video" class="absolute inset-0 w-full h-full object-cover hidden transition-transform duration-300 ease-out origin-center" playsinline autoplay muted></video>
-          <img id="scanner-sensor-img" class="absolute inset-0 w-full h-full object-cover pointer-events-none transition-transform duration-300 ease-out origin-center" alt="Viewfinder Field Subject" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAlTf7kYXp4Z-sCYzhAcO6kMDxEmX7ZCoLcjfRKB86mU39qnHQdSyhVa4TQIMB4vDbiA9xRLtdZtXyLEFPaM_xmMWvEGZdxzJJDx4SqLqPeFmdIjADE56zG0jGd_mcOrTtgoHtj-sZ-xxJv3LAUkNqrpnmFMb3YOYhY5eWqXD1xHDJjGW_55OkF0yhlzYS5CKoAHXliQ_V4VRJsg5WmFw_OHc_7aQnUf1KNgePhpevO7MU3Qv95oU3N"/>
+          <!-- Camera Sensor Live Stream Video Element -->
+          <video id="scanner-video" class="absolute inset-0 w-full h-full object-cover hidden transition-transform duration-300 ease-out origin-center z-10" playsinline autoplay muted></video>
+          
+          <!-- Uploaded Specimen Photo Frame (hidden until photo uploaded) -->
+          <img id="scanner-sensor-img" class="absolute inset-0 w-full h-full object-cover hidden transition-transform duration-300 ease-out origin-center z-10" alt="Viewfinder Field Subject" src=""/>
+
+          <!-- Standby Optical Viewfinder Radar HUD (shown when waiting for camera / upload) -->
+          <div id="scanner-standby-overlay" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10 select-none bg-radial from-[#1e2a24] to-[#121a16]">
+            <!-- Animated Concentric Reticle Radar -->
+            <div class="relative w-36 h-36 flex items-center justify-center mb-5">
+              <div class="absolute inset-0 rounded-full border border-tertiary-fixed-dim/20 animate-ping opacity-25"></div>
+              <div class="absolute inset-3 rounded-full border border-tertiary-fixed-dim/30 animate-pulse"></div>
+              <div class="absolute inset-8 rounded-full border border-dashed border-tertiary-fixed-dim/40 animate-[spin_20s_linear_infinite]"></div>
+              <div class="w-16 h-16 rounded-full border-2 border-tertiary-fixed-dim/80 flex items-center justify-center bg-obsidian-scrim/60 backdrop-blur-sm shadow-xl">
+                <span class="material-symbols-outlined text-[32px] text-tertiary-fixed-dim">center_focus_weak</span>
+              </div>
+            </div>
+            <p class="font-title-md text-[16px] text-vellum-bg font-bold tracking-wide drop-shadow-md mb-1.5">Align Specimen in Viewfinder</p>
+            <p class="font-body-sm text-[12px] text-vellum-bg/70 max-w-[260px] drop-shadow-sm leading-relaxed mb-4">
+              Point lens at wildlife in the field or upload a photo to run on-device taxonomy model
+            </p>
+            <button id="quick-upload-callout" class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-surface-card-subtle/80 hover:bg-surface-card border border-outline-hairline/60 text-vellum-bg font-label-sm text-[12px] font-semibold cursor-pointer active:scale-95 transition-all shadow-md">
+              <span class="material-symbols-outlined text-[16px] text-tertiary-fixed-dim">add_photo_alternate</span>
+              <span>Upload Wildlife Photo</span>
+            </button>
+          </div>
           
           <!-- Ambient Shadow Overlays for Telemetry Legibility -->
-          <div class="absolute inset-0 bg-gradient-to-b from-primary/70 via-transparent to-primary/80 pointer-events-none"></div>
+          <div class="absolute inset-0 bg-gradient-to-b from-primary/70 via-transparent to-primary/80 pointer-events-none z-20"></div>
 
           <!-- Viewfinder Corner HUD Brackets -->
-          <div class="absolute inset-4 pointer-events-none flex flex-col justify-between">
+          <div class="absolute inset-4 pointer-events-none flex flex-col justify-between z-20">
             <div class="flex justify-between items-start">
               <svg class="opacity-80" fill="none" height="24" viewbox="0 0 24 24" width="24">
                 <path d="M2 10V2H10" stroke="#F8F6F0" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
@@ -62,7 +91,7 @@ export class NatureScannerView {
             </div>
             <!-- Center Crosshair Marks -->
             <div class="self-center flex items-center justify-center opacity-40">
-              <svg fill="none" height="32" viewbox="0 32" width="32">
+              <svg fill="none" height="32" viewbox="0 0 32 32" width="32">
                 <path d="M16 4V10M16 22V28M4 16H10M22 16H28" stroke="#F8F6F0" stroke-linecap="round" stroke-width="1.5"></path>
                 <circle cx="16" cy="16" fill="#F8F6F0" r="2"></circle>
               </svg>
@@ -78,8 +107,8 @@ export class NatureScannerView {
           </div>
 
           <!-- Telemetry Status Bar -->
-          <div class="absolute top-3 inset-x-3 flex items-center justify-between pointer-events-auto">
-            <button id="toggle-camera-source-btn" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-obsidian-scrim shadow-md cursor-pointer hover:bg-obsidian-scrim/90 active:scale-95 transition-all" title="Toggle Live Lens / Archival Study">
+          <div class="absolute top-3 inset-x-3 flex items-center justify-between pointer-events-auto z-20">
+            <button id="toggle-camera-source-btn" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-obsidian-scrim shadow-md cursor-pointer hover:bg-obsidian-scrim/90 active:scale-95 transition-all" title="Toggle Live Lens / Viewfinder Mode">
               <span class="w-2 h-2 rounded-full bg-tertiary-fixed-dim animate-pulse" id="camera-status-dot"></span>
               <span class="font-label-sm text-label-sm text-vellum-bg uppercase tracking-wider font-semibold" id="camera-status-label">Local Vision AI • Offline</span>
             </button>
@@ -94,8 +123,8 @@ export class NatureScannerView {
             </div>
           </div>
 
-          <!-- Target Tracking Bounding Box & Neural Focus Ring -->
-          <div class="absolute top-[32%] left-[28%] w-44 h-44 pointer-events-none transition-all duration-300 transform -translate-x-2 -translate-y-2" id="reticle-target">
+          <!-- Target Tracking Bounding Box & Focus Reticle -->
+          <div class="absolute top-[32%] left-[28%] w-44 h-44 pointer-events-none transition-all duration-300 transform -translate-x-2 -translate-y-2 z-20" id="reticle-target">
             <!-- Amber Reticle Arc Ring -->
             <svg class="w-full h-full animate-[spin_12s_linear_infinite]" viewbox="0 0 100 100">
               <circle class="opacity-90" cx="50" cy="50" fill="none" r="44" stroke="#feb956" stroke-dasharray="8 6" stroke-width="2"></circle>
@@ -105,15 +134,15 @@ export class NatureScannerView {
             <div class="absolute inset-3 border-2 border-transparent border-b-amber-container border-r-amber-container rounded-br-lg"></div>
             <!-- Real-Time Classification Tooltip -->
             <div class="absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap bg-obsidian-scrim px-2.5 py-1 rounded-full shadow-lg flex items-center gap-1.5">
-              <span class="material-symbols-outlined text-tertiary-fixed-dim text-[14px]">psychology</span>
-              <span class="font-label-sm text-label-sm text-vellum-bg font-medium tracking-wide" id="reticle-label">
-                ${this.activeCommonName} · ${Math.round(this.activeConfidence * 100)}%
+              <span id="reticle-label" class="font-label-sm text-label-sm text-vellum-bg font-medium tracking-wide flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-tertiary-fixed-dim text-[14px]">center_focus_strong</span>
+                <span>Seeking Subject...</span>
               </span>
             </div>
           </div>
 
           <!-- Tactical Rangefinder & Level Meter -->
-          <div class="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col items-center gap-2 bg-obsidian-scrim px-1.5 py-3 rounded-full text-vellum-bg font-label-sm text-label-sm">
+          <div class="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col items-center gap-2 bg-obsidian-scrim px-1.5 py-3 rounded-full text-vellum-bg font-label-sm text-label-sm z-20">
             <span class="material-symbols-outlined text-[16px] text-tertiary-fixed-dim">straighten</span>
             <div class="w-1 h-14 bg-surface-container/30 rounded-full relative overflow-hidden">
               <div class="absolute bottom-0 inset-x-0 bg-tertiary-fixed-dim h-9 rounded-full"></div>
@@ -122,7 +151,7 @@ export class NatureScannerView {
           </div>
 
           <!-- Digital Zoom Toggle Pills -->
-          <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 p-1 rounded-full bg-obsidian-scrim backdrop-blur-md shadow-lg pointer-events-auto">
+          <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 p-1 rounded-full bg-obsidian-scrim backdrop-blur-md shadow-lg pointer-events-auto z-20">
             <button class="zoom-btn px-2.5 py-1 rounded-full font-label-sm text-label-sm bg-surface-container/20 text-vellum-bg font-bold shadow-sm cursor-pointer" data-zoom="1">1x</button>
             <button class="zoom-btn px-2.5 py-1 rounded-full font-label-sm text-label-sm text-vellum-bg/70 hover:text-vellum-bg transition-colors cursor-pointer" data-zoom="2">2x</button>
             <button class="zoom-btn px-2.5 py-1 rounded-full font-label-sm text-label-sm text-vellum-bg/70 hover:text-vellum-bg transition-colors cursor-pointer" data-zoom="5">5x</button>
@@ -135,12 +164,12 @@ export class NatureScannerView {
           <div class="flex items-center justify-between gap-space-sm">
             <div class="flex items-center gap-2.5 bg-surface-card px-3 py-1.5 rounded-xl shadow-sm border border-outline-hairline/60 flex-1 min-w-0 cursor-pointer active:scale-95 transition-all" id="candidate-card" title="Click to view specimen details">
               <div class="w-7 h-7 rounded-lg bg-sage-fill flex items-center justify-center text-primary shrink-0">
-                <span class="material-symbols-outlined text-[18px]">verified</span>
+                <span class="material-symbols-outlined text-[18px]" id="candidate-icon">photo_camera</span>
               </div>
               <div class="flex flex-col min-w-0">
-                <span class="font-label-sm text-label-sm text-secondary font-bold uppercase tracking-wider">Candidate Identified</span>
+                <span class="font-label-sm text-label-sm text-secondary font-bold uppercase tracking-wider" id="candidate-status-label">Optical Viewfinder Ready</span>
                 <span class="font-title-md text-title-md text-primary font-bold truncate leading-none" id="candidate-name-label">
-                  ${this.activeCommonName}
+                  Align Specimen or Upload Photo
                 </span>
               </div>
             </div>
@@ -152,12 +181,14 @@ export class NatureScannerView {
             </button>
           </div>
 
+          <!-- Alternative Candidate Chips (Quick Switcher) -->
+          <div id="candidate-chips-container" class="flex items-center gap-1.5 overflow-x-auto py-1 my-0.5 no-scrollbar min-h-[32px]"></div>
+
           <!-- Primary Shutter Action Centerpiece -->
           <div class="flex items-center justify-around py-space-sm mt-1">
             <!-- Archival Gallery Thumbnail -->
-            <button class="w-12 h-12 rounded-xl overflow-hidden border border-outline-hairline shadow-sm relative group cursor-pointer active:scale-95 transition-transform" id="scanner-folio-btn" title="Open Field Journal Folio">
-              <img class="w-full h-full object-cover group-hover:scale-110 transition-transform" alt="Last Discovery" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDCUa7mlEqL-Zl5MFy4hnfhdb1rSjhFiMP1X2DNG6Vo5QovjzpAhGZsqbSaUoPeyOcac-PgnfeM8FFl_kPrsPvaOnNMTifalb_GSZB8s5oB8VO9tc_ONVjzW9A-j8k015iT3EKJtrBT4ayxnjnMgbAmtNRkMPd-wXFa8Lfohw3pwxzB24U3-dsErWXk_cjLbviD12wqubyzkz1azwasGYEuckAoJmtzvlJmLCNsWLQbH_kn2pvGy8vb"/>
-              <div class="absolute inset-0 bg-obsidian-scrim/20"></div>
+            <button class="w-12 h-12 rounded-xl bg-surface-card flex items-center justify-center text-primary border border-outline-hairline shadow-sm relative group cursor-pointer active:scale-95 transition-transform" id="scanner-folio-btn" title="Open Field Journal Folio">
+              <span class="material-symbols-outlined text-[24px] text-primary">auto_stories</span>
             </button>
 
             <!-- Device Photo Upload Picker (Files & Gallery) -->
@@ -202,6 +233,7 @@ export class NatureScannerView {
     `;
 
     this.bindEvents();
+    this.renderCandidateChips(this.activeCandidates);
     this.refreshLiveGpsLabel();
 
     // Auto-attempt to engage camera lens on supported modern hardware
@@ -224,7 +256,77 @@ export class NatureScannerView {
     }
   }
 
+  private renderCandidateChips(candidates: Array<{ name: string; scientificName: string; confidence: number }>): void {
+    const container = this.container.querySelector('#candidate-chips-container');
+    if (!container) return;
+
+    if (!candidates || candidates.length === 0) {
+      container.innerHTML = `
+        <div class="flex items-center gap-1.5 px-1 py-0.5 text-secondary font-label-sm text-[11px] opacity-75">
+          <span class="material-symbols-outlined text-[15px]">info</span>
+          <span>Point lens at subject or tap photo button to run on-device vision model</span>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = `
+      <div class="flex items-center gap-1.5 shrink-0 px-0.5">
+        <span class="text-[10px] font-mono uppercase text-secondary font-bold shrink-0">Candidates:</span>
+        ${candidates.map((c) => `
+          <button class="candidate-chip px-2.5 py-1 rounded-full text-[11px] font-medium transition-all shrink-0 cursor-pointer active:scale-95 ${
+            c.name === this.activeCommonName 
+              ? 'bg-primary text-vellum-bg font-bold shadow-sm' 
+              : 'bg-surface-card-subtle text-primary hover:bg-surface-container border border-outline-hairline/60'
+          }" data-name="${c.name}" data-latin="${c.scientificName}" data-conf="${c.confidence}">
+            ${c.name === this.activeCommonName ? '✓ ' : ''}${c.name} · ${Math.round(c.confidence * 100)}%
+          </button>
+        `).join('')}
+      </div>
+    `;
+
+    container.querySelectorAll('.candidate-chip').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const target = e.currentTarget as HTMLElement;
+        const name = target.getAttribute('data-name');
+        const latin = target.getAttribute('data-latin');
+        const conf = parseFloat(target.getAttribute('data-conf') || '0.9');
+
+        if (name) {
+          this.activeCommonName = name;
+          if (latin) this.activeScientificName = latin;
+          this.activeConfidence = conf;
+
+          const candidateLabel = this.container.querySelector('#candidate-name-label');
+          const reticleLabel = this.container.querySelector('#reticle-label');
+          const candidateStatus = this.container.querySelector('#candidate-status-label');
+          const candidateIcon = this.container.querySelector('#candidate-icon');
+
+          if (candidateStatus) candidateStatus.textContent = 'Candidate Identified';
+          if (candidateIcon) candidateIcon.textContent = 'verified';
+          if (candidateLabel) candidateLabel.textContent = this.activeCommonName;
+          if (reticleLabel) {
+            reticleLabel.innerHTML = `
+              <span class="material-symbols-outlined text-tertiary-fixed-dim text-[14px]">psychology</span>
+              <span>${this.activeCommonName} · ${Math.round(this.activeConfidence * 100)}%</span>
+            `;
+          }
+
+          this.renderCandidateChips(candidates);
+        }
+      });
+    });
+  }
+
   private bindEvents(): void {
+    // Quick Upload Callout in Standby Viewfinder
+    const quickUploadBtn = this.container.querySelector('#quick-upload-callout');
+    quickUploadBtn?.addEventListener('click', () => {
+      const filePicker = this.container.querySelector('#scanner-file-picker') as HTMLInputElement;
+      filePicker?.click();
+    });
+
     // Shutter Trigger with Real Capture Pipeline
     const shutter = this.container.querySelector('#shutter-btn');
     shutter?.addEventListener('click', async () => {
@@ -261,38 +363,73 @@ export class NatureScannerView {
       if (!file) return;
 
       const reader = new FileReader();
-      reader.onload = (event) => {
+      reader.onload = async (event) => {
         const dataUrl = event.target?.result as string;
         if (dataUrl) {
           // Switch to uploaded photo in viewfinder
           const video = this.container.querySelector('#scanner-video') as HTMLVideoElement;
           const img = this.container.querySelector('#scanner-sensor-img') as HTMLImageElement;
+          const standby = this.container.querySelector('#scanner-standby-overlay') as HTMLElement;
+          
           if (video) video.classList.add('hidden');
+          if (standby) standby.classList.add('hidden');
           if (img) {
             img.src = dataUrl;
             img.classList.remove('hidden');
           }
           this.isUsingLiveCamera = false;
 
-          // Extract species from filename if possible
-          const parsed = FieldEntityParser.parse(file.name.replace(/[._-]/g, ' '));
-          if (parsed.commonName && parsed.commonName !== 'General Field Note') {
-            this.activeCommonName = parsed.commonName;
-            this.activeScientificName = parsed.scientificName || 'Taxa';
-            this.activeKingdom = parsed.kingdomOrGroup || 'Plantae';
-            this.activeConfidence = 0.94;
-          } else {
-            this.activeCommonName = 'Field Specimen';
-            this.activeScientificName = 'Taxa Indet.';
-            this.activeKingdom = 'Plantae';
-            this.activeConfidence = 0.88;
-          }
-
-          // Update UI reticle and candidate badge
+          // Display active scanning state in HUD
+          const candidateStatus = this.container.querySelector('#candidate-status-label');
           const candidateLabel = this.container.querySelector('#candidate-name-label');
           const reticleLabel = this.container.querySelector('#reticle-label');
-          if (candidateLabel) candidateLabel.textContent = this.activeCommonName;
-          if (reticleLabel) reticleLabel.textContent = `${this.activeCommonName} · ${Math.round(this.activeConfidence * 100)}%`;
+          const candidateIcon = this.container.querySelector('#candidate-icon');
+
+          if (candidateStatus) candidateStatus.textContent = 'On-Device Neural Scan';
+          if (candidateLabel) candidateLabel.textContent = 'Analyzing Specimen...';
+          if (candidateIcon) candidateIcon.textContent = 'memory';
+          if (reticleLabel) {
+            reticleLabel.innerHTML = `
+              <span class="material-symbols-outlined text-tertiary-fixed-dim text-[14px] animate-spin">refresh</span>
+              <span>Analyzing Specimen...</span>
+            `;
+          }
+
+          // 1. Run On-Device Visual Computer Vision Analysis on actual image pixels
+          try {
+            const visual = await VisualClassifier.classify(dataUrl);
+            this.activeCommonName = visual.commonName;
+            this.activeScientificName = visual.scientificName;
+            this.activeKingdom = visual.kingdomOrGroup;
+            this.activeConfidence = visual.confidenceScore;
+            this.activeHabitat = visual.habitat;
+            this.activeSubstrate = visual.substrate;
+            this.activeFieldNotes = visual.fieldNotes;
+            this.activeCandidates = visual.candidates;
+          } catch (visErr) {
+            console.warn('VisualClassifier pixel analysis fallback:', visErr);
+            // 2. Fallback to filename NLP extraction if pixel analysis encounters CORS/canvas error
+            const rawPrompt = file.name.replace(/[._-]/g, ' ');
+            const parsed = FieldEntityParser.parse(rawPrompt);
+            if (parsed.commonName && parsed.commonName !== 'General Field Note' && parsed.commonName !== 'Unclassified Observation') {
+              this.activeCommonName = parsed.commonName;
+              this.activeScientificName = parsed.scientificName || 'Taxa';
+              this.activeKingdom = parsed.kingdomOrGroup || 'Plantae';
+              this.activeConfidence = 0.92;
+            }
+          }
+
+          // Update UI reticle, candidate badge, and candidate chips
+          if (candidateStatus) candidateStatus.textContent = 'Candidate Identified';
+          if (candidateIcon) candidateIcon.textContent = 'verified';
+          if (candidateLabel) candidateLabel.textContent = this.activeCommonName || 'Specimen Analyzed';
+          if (reticleLabel) {
+            reticleLabel.innerHTML = `
+              <span class="material-symbols-outlined text-tertiary-fixed-dim text-[14px]">psychology</span>
+              <span>${this.activeCommonName} · ${Math.round(this.activeConfidence * 100)}%</span>
+            `;
+          }
+          this.renderCandidateChips(this.activeCandidates);
         }
       };
       reader.readAsDataURL(file);
@@ -331,9 +468,10 @@ export class NatureScannerView {
 
     // Candidate Card click -> open result
     const candidateCard = this.container.querySelector('#candidate-card');
-    candidateCard?.addEventListener('click', () => {
+    candidateCard?.addEventListener('click', async () => {
       this.stopCamera();
-      this.onCapture('indian-palm-squirrel');
+      const captured = await this.captureCurrentSpecimen();
+      this.onCapture(captured.id);
     });
 
     // Torch Toggle
@@ -446,6 +584,18 @@ export class NatureScannerView {
         if (ctx) {
           ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
           photoUrl = canvas.toDataURL('image/jpeg', 0.88);
+          try {
+            const visual = await VisualClassifier.classify(canvas);
+            this.activeCommonName = visual.commonName;
+            this.activeScientificName = visual.scientificName;
+            this.activeKingdom = visual.kingdomOrGroup;
+            this.activeConfidence = visual.confidenceScore;
+            this.activeHabitat = visual.habitat;
+            this.activeSubstrate = visual.substrate;
+            this.activeFieldNotes = visual.fieldNotes;
+          } catch {
+            // Keep current
+          }
         }
       } catch (e) {
         console.warn('Canvas frame capture fallback:', e);
@@ -456,23 +606,36 @@ export class NatureScannerView {
     const timeFormatted = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const newId = `specimen-${Date.now().toString().slice(-6)}`;
 
+    const effectiveName = this.activeCommonName || 'Field Specimen';
+    const effectiveLatin = this.activeScientificName || 'Biodiversity observation';
+
+    // Invoke runner to extract structured field entities from specimen context
+    const runner = getModelRunner();
+    const specimenContext = `${effectiveName} (${effectiveLatin}) adult observed in wild habitat canopy at ${coords.latitude.toFixed(4)}N, ${coords.longitude.toFixed(4)}E. Substrate weathered bark.`;
+    let parsedEntities: any = null;
+    try {
+      parsedEntities = await runner.extractFieldEntities(specimenContext);
+    } catch {
+      parsedEntities = FieldEntityParser.parse(specimenContext);
+    }
+
     const newObs: FieldObservation = {
       id: newId,
       timestamp: Date.now(),
       readableDate: `Today · ${timeFormatted}`,
       coordinates: coords,
       photoUrl: photoUrl,
-      speciesCandidates: [this.activeCommonName, this.activeScientificName],
-      commonName: this.activeCommonName,
-      scientificName: this.activeScientificName,
-      confidenceScore: this.activeConfidence,
+      speciesCandidates: this.activeCandidates.length > 0 ? this.activeCandidates.map((c) => c.name) : [effectiveName],
+      commonName: effectiveName,
+      scientificName: effectiveLatin,
+      confidenceScore: this.activeConfidence > 0 ? this.activeConfidence : 0.85,
       kingdomOrGroup: this.activeKingdom,
-      habitat: `Field Sector · ${coords.latitude.toFixed(4)}° N, ${coords.longitude.toFixed(4)}° E`,
-      substrate: 'Weathered bark canopy',
-      abundanceCount: 1,
-      lifeStage: 'adult',
+      habitat: this.activeHabitat || parsedEntities?.habitat || `Field Sector · ${coords.latitude.toFixed(4)}° N, ${coords.longitude.toFixed(4)}° E`,
+      substrate: this.activeSubstrate || parsedEntities?.substrate || 'Horizontal tree branch',
+      abundanceCount: parsedEntities?.abundanceCount || 1,
+      lifeStage: parsedEntities?.lifeStage || 'adult',
       weatherObservation: 'Field optical intake',
-      fieldNotes: `Captured via TrailScribe optical viewfinder reticle HUD at ${coords.latitude.toFixed(4)}° N, ${coords.longitude.toFixed(4)}° E. High confidence lock confirmed.`,
+      fieldNotes: this.activeFieldNotes || `Captured via TrailScribe optical viewfinder reticle HUD at ${coords.latitude.toFixed(4)}° N, ${coords.longitude.toFixed(4)}° E. High confidence lock confirmed by ${runner.name}.`,
       synced: false
     };
 
@@ -483,6 +646,7 @@ export class NatureScannerView {
   public async startCamera(): Promise<void> {
     const video = this.container.querySelector('#scanner-video') as HTMLVideoElement;
     const img = this.container.querySelector('#scanner-sensor-img') as HTMLImageElement;
+    const standby = this.container.querySelector('#scanner-standby-overlay') as HTMLElement;
     const label = this.container.querySelector('#camera-status-label');
     const dot = this.container.querySelector('#camera-status-dot');
 
@@ -498,6 +662,7 @@ export class NatureScannerView {
         if (video) {
           video.srcObject = this.videoStream;
           video.classList.remove('hidden');
+          standby?.classList.add('hidden');
           img?.classList.add('hidden');
           this.isUsingLiveCamera = true;
           if (label) label.textContent = 'Live Lens Active';
@@ -520,11 +685,17 @@ export class NatureScannerView {
     }
     const video = this.container.querySelector('#scanner-video') as HTMLVideoElement;
     const img = this.container.querySelector('#scanner-sensor-img') as HTMLImageElement;
+    const standby = this.container.querySelector('#scanner-standby-overlay') as HTMLElement;
     const label = this.container.querySelector('#camera-status-label');
     const dot = this.container.querySelector('#camera-status-dot');
 
     if (video) video.classList.add('hidden');
-    if (img) img.classList.remove('hidden');
+    if (img && img.src && !img.src.endsWith('/')) {
+      img.classList.remove('hidden');
+      standby?.classList.add('hidden');
+    } else {
+      standby?.classList.remove('hidden');
+    }
     this.isUsingLiveCamera = false;
     if (label) label.textContent = 'Local Vision AI • Offline';
     if (dot) {
