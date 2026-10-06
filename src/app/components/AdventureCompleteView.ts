@@ -6,6 +6,7 @@ export class AdventureCompleteView {
   private container: HTMLElement;
   private onViewJournal: () => void;
   private onStartAnother: () => void;
+  private onOpenMap?: () => void;
   private sessionSummary?: AdventureSessionSummary;
   private onSelectSpecimen?: (id: string) => void;
 
@@ -14,6 +15,7 @@ export class AdventureCompleteView {
     callbacks: {
       onViewJournal: () => void;
       onStartAnother: () => void;
+      onOpenMap?: () => void;
       onSelectSpecimen?: (id: string) => void;
     },
     sessionSummary?: AdventureSessionSummary
@@ -21,6 +23,7 @@ export class AdventureCompleteView {
     this.container = container;
     this.onViewJournal = callbacks.onViewJournal;
     this.onStartAnother = callbacks.onStartAnother;
+    this.onOpenMap = callbacks.onOpenMap;
     this.onSelectSpecimen = callbacks.onSelectSpecimen;
     this.sessionSummary = sessionSummary;
   }
@@ -79,13 +82,16 @@ export class AdventureCompleteView {
 
         <!-- Loop Map Card -->
         <div class="px-margin mt-space-lg">
-          <div class="bg-surface-card rounded-xl p-space-md shadow-sm border border-outline-hairline/60">
+          <div class="bg-surface-card rounded-xl p-space-md shadow-sm border border-outline-hairline/60 cursor-pointer hover:border-secondary active:scale-[0.99] transition-all" id="loop-map-card" title="Open Interactive Offline Map">
             <div class="flex items-center justify-between mb-space-sm">
               <div class="flex items-center gap-2">
                 <span class="material-symbols-outlined text-secondary text-[18px]">route</span>
                 <span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant font-bold">Blackwood Ridge Circuit</span>
               </div>
-              <span class="font-label-sm text-label-sm text-on-surface-variant">Loop · 148m Elev</span>
+              <div class="flex items-center gap-1 text-secondary font-label-sm text-label-sm font-semibold">
+                <span>View Map</span>
+                <span class="material-symbols-outlined text-[15px]">arrow_forward</span>
+              </div>
             </div>
             <div class="relative w-full h-36 rounded-lg bg-surface-card-subtle overflow-hidden flex items-center justify-center">
               <svg class="w-full h-full p-2" fill="none" viewbox="0 0 340 130" xmlns="http://www.w3.org/2000/svg">
@@ -194,6 +200,15 @@ export class AdventureCompleteView {
   }
 
   private bindEvents(): void {
+    const loopMapCard = this.container.querySelector('#loop-map-card');
+    loopMapCard?.addEventListener('click', () => {
+      if (this.onOpenMap) {
+        this.onOpenMap();
+      } else {
+        this.onViewJournal();
+      }
+    });
+
     const journalBtn = this.container.querySelector('#view-journal-btn');
     journalBtn?.addEventListener('click', () => {
       journalBtn.classList.add('scale-95');

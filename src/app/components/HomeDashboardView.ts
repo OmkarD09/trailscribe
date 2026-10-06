@@ -6,6 +6,7 @@ export class HomeDashboardView {
   private onViewAll: () => void;
   private onSelectSpecimen: (specimenId: string) => void;
   private onOpenProfile: () => void;
+  private onOpenMap?: () => void;
 
   constructor(
     container: HTMLElement,
@@ -14,6 +15,7 @@ export class HomeDashboardView {
       onViewAll: () => void;
       onSelectSpecimen: (specimenId: string) => void;
       onOpenProfile: () => void;
+      onOpenMap?: () => void;
     }
   ) {
     this.container = container;
@@ -21,6 +23,7 @@ export class HomeDashboardView {
     this.onViewAll = callbacks.onViewAll;
     this.onSelectSpecimen = callbacks.onSelectSpecimen;
     this.onOpenProfile = callbacks.onOpenProfile;
+    this.onOpenMap = callbacks.onOpenMap;
   }
 
   async render(): Promise<void> {
@@ -72,11 +75,17 @@ export class HomeDashboardView {
             </div>
             <span class="font-label-md text-label-md text-secondary font-bold">1 / 3 Recorded</span>
           </div>
-          <!-- Primary Action Button -->
-          <button class="mt-space-md w-full h-12 rounded-lg bg-primary-container text-vellum-bg font-title-md text-title-md flex items-center justify-center gap-2 shadow-[0_4px_16px_rgba(21,26,23,0.10)] active:bg-secondary transition-all cursor-pointer" id="start-adventure-btn">
-            <span>START ADVENTURE</span>
-            <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
-          </button>
+          <!-- Primary Action Button Cluster -->
+          <div class="mt-space-md grid grid-cols-2 gap-space-sm">
+            <button class="h-12 rounded-lg bg-surface-card text-primary font-title-md text-title-md flex items-center justify-center gap-2 border border-outline-hairline/60 active:scale-[0.98] transition-all cursor-pointer shadow-sm hover:border-secondary" id="explore-map-btn" title="Open Offline Adventure Map">
+              <span class="material-symbols-outlined text-[20px] text-secondary">explore</span>
+              <span>FIELD MAP</span>
+            </button>
+            <button class="h-12 rounded-lg bg-primary-container text-vellum-bg font-title-md text-title-md flex items-center justify-center gap-2 shadow-[0_4px_16px_rgba(21,26,23,0.10)] active:bg-secondary active:scale-[0.98] transition-all cursor-pointer" id="start-adventure-btn">
+              <span>START QUEST</span>
+              <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+            </button>
+          </div>
         </section>
 
         <!-- Your Week Activity Tracker -->
@@ -236,6 +245,20 @@ export class HomeDashboardView {
       setTimeout(() => {
         startBtn.classList.remove('scale-[0.98]');
         this.onStartAdventure();
+      }, 150);
+    });
+
+    // Bind Explore Map
+    const mapBtn = this.container.querySelector('#explore-map-btn');
+    mapBtn?.addEventListener('click', () => {
+      mapBtn.classList.add('scale-[0.98]');
+      setTimeout(() => {
+        mapBtn.classList.remove('scale-[0.98]');
+        if (this.onOpenMap) {
+          this.onOpenMap();
+        } else {
+          this.onStartAdventure();
+        }
       }, 150);
     });
 

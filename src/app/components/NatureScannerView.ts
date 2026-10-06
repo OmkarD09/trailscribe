@@ -7,6 +7,7 @@ export class NatureScannerView {
   private onCapture: (newSpecimenId?: string) => void;
   private onListenForNature: () => void;
   private onOpenFolio: () => void;
+  private onOpenMap?: () => void;
   private videoStream: MediaStream | null = null;
   private torchActive: boolean = false;
   private isUsingLiveCamera: boolean = false;
@@ -18,12 +19,14 @@ export class NatureScannerView {
       onCapture: (newSpecimenId?: string) => void;
       onListenForNature: () => void;
       onOpenFolio: () => void;
+      onOpenMap?: () => void;
     }
   ) {
     this.container = container;
     this.onCapture = callbacks.onCapture;
     this.onListenForNature = callbacks.onListenForNature;
     this.onOpenFolio = callbacks.onOpenFolio;
+    this.onOpenMap = callbacks.onOpenMap;
   }
 
   render(): void {
@@ -167,10 +170,10 @@ export class NatureScannerView {
 
           <!-- Bottom Micro GPS & Hardware Barcode Telemetry -->
           <div class="flex items-center justify-between text-on-surface-variant font-label-sm text-label-sm pt-1 border-t border-outline-hairline/40 font-mono">
-            <span class="flex items-center gap-1">
-              <span class="material-symbols-outlined text-[13px] text-secondary">satellite_alt</span>
-              <span id="gps-display-label">GPS LOCK · 19.0438° N, 73.0674° E</span>
-            </span>
+            <button class="flex items-center gap-1 cursor-pointer hover:text-primary active:scale-95 transition-all text-left" id="gps-display-btn" title="Tap to view GPS position on Offline Map">
+              <span class="material-symbols-outlined text-[14px] text-secondary">explore</span>
+              <span id="gps-display-label">GPS LOCK · 19.0728° N, 72.8826° E</span>
+            </button>
             <span class="text-secondary font-bold tracking-wider">OFFLINE AI ENGINE v3.8</span>
           </div>
         </div>
@@ -183,10 +186,10 @@ export class NatureScannerView {
 
   private async refreshLiveGpsLabel(): Promise<void> {
     try {
-      const coords = await GeoLocationTracker.getCurrentPosition();
+      const coords = await GeoLocationTracker.getCurrentPosition(false);
       const gpsLabel = this.container.querySelector('#gps-display-label');
       if (gpsLabel) {
-        gpsLabel.textContent = `GPS LOCK · ${coords.latitude.toFixed(4)}° N, ${coords.longitude.toFixed(4)}° E (±${coords.accuracy || 5}m)`;
+        gpsLabel.textContent = `GPS LOCK · ${coords.latitude.toFixed(4)}° N, ${coords.longitude.toFixed(4)}° E (±${coords.accuracy || 15}m)`;
       }
     } catch {
       // Keep default
@@ -230,6 +233,15 @@ export class NatureScannerView {
     folioBtn?.addEventListener('click', () => {
       this.stopCamera();
       this.onOpenFolio();
+    });
+
+    // GPS Telemetry Button -> View on Map
+    const gpsBtn = this.container.querySelector('#gps-display-btn');
+    gpsBtn?.addEventListener('click', () => {
+      this.stopCamera();
+      if (this.onOpenMap) {
+        this.onOpenMap();
+      }
     });
 
     // Candidate Card click -> open result

@@ -6,8 +6,9 @@ export class AdventureMapView {
   private container: HTMLElement;
   private onSelectSpecimen: (specimenId: string) => void;
   private onViewFolio: () => void;
+  private onOpenAdventure?: () => void;
   private observations: FieldObservation[] = [];
-  private userCoords: Coordinates = { latitude: 19.0438, longitude: 73.0674, accuracy: 5 };
+  private userCoords: Coordinates = { latitude: 19.0728, longitude: 72.8826, accuracy: 25 };
   private compassRotation: number = 0;
   private activeLayerIndex: number = 0;
   private readonly mapLayers = [
@@ -21,11 +22,13 @@ export class AdventureMapView {
     callbacks: {
       onSelectSpecimen: (specimenId: string) => void;
       onViewFolio: () => void;
+      onOpenAdventure?: () => void;
     }
   ) {
     this.container = container;
     this.onSelectSpecimen = callbacks.onSelectSpecimen;
     this.onViewFolio = callbacks.onViewFolio;
+    this.onOpenAdventure = callbacks.onOpenAdventure;
   }
 
   async render(): Promise<void> {
@@ -115,15 +118,18 @@ export class AdventureMapView {
             </div>
           </div>
 
-          <!-- Floating Top Trip Strip Card: Live Expedition Telemetry -->
-          <div class="absolute top-4 inset-x-margin z-20">
-            <div class="w-full bg-surface-card rounded-xl p-space-md shadow-md flex flex-col gap-space-xs border border-outline-hairline/60">
+          <!-- Floating Top Trip Strip Card: Live Expedition Telemetry (Clickable to Adventure) -->
+          <div class="absolute top-4 inset-x-margin z-20 cursor-pointer" id="trip-strip-card" title="Open Active Adventure Mode">
+            <div class="w-full bg-surface-card rounded-xl p-space-md shadow-md flex flex-col gap-space-xs border border-outline-hairline/60 hover:border-secondary active:scale-[0.99] transition-all">
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-1.5">
                   <span class="material-symbols-outlined text-[16px] text-on-tertiary-container" style="font-variation-settings: 'FILL' 1;">near_me</span>
                   <span class="font-label-sm text-label-sm tracking-wider uppercase text-on-surface-variant font-bold">Your Adventure</span>
                 </div>
-                <span class="px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-semibold">Active Track</span>
+                <div class="flex items-center gap-1">
+                  <span class="px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-semibold">Active Track</span>
+                  <span class="material-symbols-outlined text-[15px] text-secondary">arrow_forward</span>
+                </div>
               </div>
               <div class="grid grid-cols-3 divide-x-0 pt-1">
                 <div class="flex flex-col">
@@ -210,7 +216,7 @@ export class AdventureMapView {
       </div>
     `;
 
-    this.bindEvents(bounds);
+    this.bindEvents();
   }
 
   private renderDynamicPins(observations: FieldObservation[], bounds: ReturnType<typeof computeBoundingBox>): string {
@@ -321,8 +327,7 @@ export class AdventureMapView {
       .join('');
   }
 
-  private bindEvents(bounds: ReturnType<typeof computeBoundingBox>): void {
-    // Map Pins
+  private bindPinEvents(): void {
     const pins = this.container.querySelectorAll('.map-pin');
     pins.forEach((pin) => {
       pin.addEventListener('click', () => {
@@ -330,6 +335,19 @@ export class AdventureMapView {
         this.onSelectSpecimen(id);
       });
     });
+  }
+
+  private bindEvents(): void {
+    // Top Trip Strip Card: Open Adventure Mode
+    const tripStrip = this.container.querySelector('#trip-strip-card');
+    tripStrip?.addEventListener('click', () => {
+      if (this.onOpenAdventure) {
+        this.onOpenAdventure();
+      }
+    });
+
+    // Map Pins
+    this.bindPinEvents();
 
     // Carousel Cards
     const cards = this.container.querySelectorAll('.map-carousel-card');
@@ -381,7 +399,7 @@ export class AdventureMapView {
       }
     });
 
-    // Locate Me Button (Re-poll GPS & Update Beacon)
+    // Locate Me Button (Forced Live GPS Sensor Re-poll & Dynamic Projection)
     const locateBtn = this.container.querySelector('#map-locate-btn');
     const userPin = this.container.querySelector('#active-user-pin') as HTMLElement;
     const gpsLabel = this.container.querySelector('#map-gps-label');
@@ -389,28 +407,75 @@ export class AdventureMapView {
 
     locateBtn?.addEventListener('click', async () => {
       locateBtn.classList.add('scale-90');
-      if (gpsDot) gpsDot.classList.add('bg-amber-on-container');
+      if (gpsDot) {
+        gpsDot.classList.remove('bg-secondary');
+        gpsDot.classList.add('bg-amber-container', 'animate-ping');
+      }
+
+      if (toast) {
+        toast.textContent = 'Acquiring GPS Position...';
+        toast.classList.remove('opacity-0');
+        toast.classList.add('opacity-100');
+      }
 
       try {
-        this.userCoords = await GeoLocationTracker.getCurrentPosition();
-        const userPos = projectToCanvas(this.userCoords, bounds);
+        // Force fresh acquisition
+        this.userCoords = await GeoLocationTracker.getCurrentPosition(true);
+        const source = GeoLocationTracker.getLocationSource();
 
+        // Recompute spatial bounds including new coordinates
+        const validObs = this.observations.filter(
+          (o) => o.coordinates && typeof o.coordinates.latitude === 'number' && typeof o.coordinates.longitude === 'number'
+        );
+        const obsCoords = validObs.map((o) => o.coordinates!);
+        const updatedBounds = computeBoundingBox([...obsCoords, this.userCoords]);
+
+        // Re-render observation pins with updated bounds
+        const pinsContainer = this.container.querySelector('#dynamic-pins-container');
+        if (pinsContainer) {
+          pinsContainer.innerHTML = this.renderDynamicPins(validObs, updatedBounds);
+          this.bindPinEvents();
+        }
+
+        // Project and animate user pin to fresh coordinates
+        const userPos = projectToCanvas(this.userCoords, updatedBounds);
         if (userPin) {
           userPin.style.left = `${userPos.xPercent}%`;
           userPin.style.top = `${userPos.yPercent}%`;
         }
 
+        // Update GPS status telemetry
+        const sourceLabel = source === 'gps' ? 'GPS LOCK' : source === 'network' ? 'WI-FI / CELL LOCK' : 'NETWORK LOC';
         if (gpsLabel) {
-          gpsLabel.textContent = `GPS LOCK · ${this.userCoords.latitude.toFixed(4)}° N, ${this.userCoords.longitude.toFixed(4)}° E (±${this.userCoords.accuracy || 5}m)`;
+          gpsLabel.textContent = `${sourceLabel} · ${this.userCoords.latitude.toFixed(4)}° N, ${this.userCoords.longitude.toFixed(4)}° E (±${this.userCoords.accuracy || 12}m)`;
+        }
+
+        if (toast) {
+          toast.textContent = `Position Locked: ${this.userCoords.latitude.toFixed(4)}° N, ${this.userCoords.longitude.toFixed(4)}° E`;
+          setTimeout(() => {
+            toast.classList.remove('opacity-100');
+            toast.classList.add('opacity-0');
+          }, 2000);
         }
       } catch (err) {
         console.warn('GPS query notice:', err);
+        if (toast) {
+          toast.textContent = 'GPS Sensor Timeout · Using Field Baseline';
+          setTimeout(() => {
+            toast.classList.remove('opacity-100');
+            toast.classList.add('opacity-0');
+          }, 2000);
+        }
       } finally {
         setTimeout(() => {
           locateBtn.classList.remove('scale-90');
-          if (gpsDot) gpsDot.classList.remove('bg-amber-on-container');
+          if (gpsDot) {
+            gpsDot.classList.remove('bg-amber-container', 'animate-ping');
+            gpsDot.classList.add('bg-secondary');
+          }
         }, 300);
       }
     });
   }
 }
+

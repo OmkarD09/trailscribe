@@ -94,8 +94,8 @@ const SCREENS: Record<ScreenId, ScreenMeta> = {
     id: 'adventure-mode',
     name: '8. Active Field Quest',
     hasHeader: true,
-    hasNav: false,
-    headerTitle: 'Specimen Capture',
+    hasNav: true,
+    headerTitle: 'Field Quest',
     isSecondary: true
   },
   'adventure-complete': {
@@ -407,6 +407,7 @@ class TrailScribeApp {
         const view = new HomeDashboardView(container, {
           onStartAdventure: () => this.navigateTo('adventure-mode'),
           onViewAll: () => this.navigateTo('field-journal'),
+          onOpenMap: () => this.navigateTo('offline-map'),
           onSelectSpecimen: (specimenId) => {
             this.selectedSpecimenId = specimenId;
             this.navigateTo('identification-result');
@@ -423,7 +424,8 @@ class TrailScribeApp {
             this.selectedSpecimenId = specimenId;
             this.navigateTo('identification-result');
           },
-          onViewFolio: () => this.navigateTo('field-journal')
+          onViewFolio: () => this.navigateTo('field-journal'),
+          onOpenAdventure: () => this.navigateTo('adventure-mode')
         });
         await view.render();
         break;
@@ -438,7 +440,8 @@ class TrailScribeApp {
             this.navigateTo('identification-result');
           },
           onListenForNature: () => this.navigateTo('sound-identification'),
-          onOpenFolio: () => this.navigateTo('field-journal')
+          onOpenFolio: () => this.navigateTo('field-journal'),
+          onOpenMap: () => this.navigateTo('offline-map')
         });
         this.activeScannerInstance = view;
         view.render();
@@ -484,7 +487,8 @@ class TrailScribeApp {
           onConcludeAdventure: (summary) => {
             this.lastAdventureSummary = summary;
             this.navigateTo('adventure-complete');
-          }
+          },
+          onOpenMap: () => this.navigateTo('offline-map')
         });
         this.activeAdventureInstance = view;
         view.render();
@@ -497,6 +501,7 @@ class TrailScribeApp {
           {
             onViewJournal: () => this.navigateTo('field-journal'),
             onStartAnother: () => this.navigateTo('adventure-mode'),
+            onOpenMap: () => this.navigateTo('offline-map'),
             onSelectSpecimen: (specimenId) => {
               this.selectedSpecimenId = specimenId;
               this.navigateTo('identification-result');

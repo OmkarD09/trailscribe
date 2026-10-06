@@ -5,7 +5,7 @@ import 'fake-indexeddb/auto';
 import { TrailScribeDB } from '../src/storage/db.ts';
 import { DataExporter } from '../src/storage/exporter.ts';
 import { FieldEntityParser } from '../src/runner/parser.ts';
-import { computeBoundingBox, projectToCanvas } from '../src/utils/geolocation.ts';
+import { computeBoundingBox, projectToCanvas, GeoLocationTracker } from '../src/utils/geolocation.ts';
 import type { FieldObservation, Coordinates } from '../src/storage/types.ts';
 
 describe('TrailScribe Offline Backend & Data Layer Validation', () => {
@@ -235,6 +235,23 @@ describe('TrailScribe Offline Backend & Data Layer Validation', () => {
       assert.ok(p.xPercent >= 14 && p.xPercent <= 84);
       assert.ok(p.yPercent >= 22 && p.yPercent <= 76);
     }
+  });
+
+  test('10. Multi-Tier Geolocation Tracking & Cascading Sensor Acquisition', async () => {
+    const coords = await GeoLocationTracker.getCurrentPosition();
+    assert.ok(typeof coords.latitude === 'number');
+    assert.ok(typeof coords.longitude === 'number');
+    assert.ok(coords.latitude >= -90 && coords.latitude <= 90);
+    assert.ok(coords.longitude >= -180 && coords.longitude <= 180);
+
+    const source = GeoLocationTracker.getLocationSource();
+    assert.ok(['gps', 'network', 'ip', 'fallback'].includes(source));
+
+    // Test forceRefresh query
+    const refreshed = await GeoLocationTracker.getCurrentPosition(true);
+    assert.ok(typeof refreshed.latitude === 'number');
+    assert.ok(typeof refreshed.longitude === 'number');
+    assert.ok(refreshed.accuracy !== undefined);
   });
 });
 

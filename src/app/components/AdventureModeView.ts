@@ -12,6 +12,7 @@ export class AdventureModeView {
   private container: HTMLElement;
   private onSpotSpecimen: () => void;
   private onConcludeAdventure: (summary: AdventureSessionSummary) => void;
+  private onOpenMap: () => void;
   private isPaused: boolean = false;
   private elapsedSeconds: number = 18 * 60; // Default starts at 18 minutes
   private distanceKm: number = 0.84;
@@ -23,11 +24,13 @@ export class AdventureModeView {
     callbacks: {
       onSpotSpecimen: () => void;
       onConcludeAdventure: (summary: AdventureSessionSummary) => void;
+      onOpenMap: () => void;
     }
   ) {
     this.container = container;
     this.onSpotSpecimen = callbacks.onSpotSpecimen;
     this.onConcludeAdventure = callbacks.onConcludeAdventure;
+    this.onOpenMap = callbacks.onOpenMap;
   }
 
   render(): void {
@@ -37,16 +40,21 @@ export class AdventureModeView {
     this.container.innerHTML = `
       <div class="flex flex-col w-full pb-safe view-enter">
         <div class="px-margin pt-space-md flex flex-col gap-space-lg max-w-md mx-auto w-full">
-          <!-- Instrument Telemetry Strip -->
-          <div class="flex items-center justify-between bg-surface-card-subtle px-space-md py-space-sm rounded-xl shadow-sm border border-outline-hairline/60">
-            <div class="flex items-center gap-space-xs">
-              <span class="w-2 h-2 rounded-full bg-primary animate-ping"></span>
-              <span class="w-2 h-2 rounded-full bg-primary -ml-space-xs"></span>
-              <span class="font-label-sm text-label-sm text-secondary uppercase tracking-widest pl-1 font-mono" id="gps-telemetry-label">GPS Lock • 19.0438° N</span>
-            </div>
-            <div class="flex items-center gap-1.5 text-on-surface-variant font-label-sm text-label-sm">
-              <span class="material-symbols-outlined text-[16px] text-secondary">battery_charging_full</span>
-              <span id="field-scan-status">Passive Scan Active</span>
+          <!-- Instrument Telemetry Strip with Direct Map Jump -->
+          <div class="flex items-center justify-between bg-surface-card-subtle px-space-md py-space-sm rounded-xl shadow-sm border border-outline-hairline/60 gap-2">
+            <button class="flex items-center gap-space-xs text-left cursor-pointer hover:opacity-80 active:scale-95 transition-all group min-w-0 flex-1" id="gps-telemetry-btn" title="Tap to lock GPS or view on Map">
+              <span class="w-2.5 h-2.5 rounded-full bg-primary animate-ping shrink-0"></span>
+              <span class="w-2.5 h-2.5 rounded-full bg-primary -ml-space-xs shrink-0"></span>
+              <div class="flex flex-col pl-1 min-w-0">
+                <span class="font-label-sm text-label-sm text-secondary uppercase tracking-widest font-mono font-bold group-hover:underline truncate" id="gps-telemetry-label">GPS Lock • Acquiring...</span>
+                <span class="text-[10px] text-on-surface-variant font-mono truncate" id="gps-source-label">Connecting GPS Sensor</span>
+              </div>
+            </button>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <button class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-primary-container text-vellum-bg text-label-sm font-semibold hover:bg-secondary active:scale-95 transition-all cursor-pointer shadow-sm" id="view-map-strip-btn" title="Open Interactive Trail Map">
+                <span class="material-symbols-outlined text-[16px]">explore</span>
+                <span>MAP</span>
+              </button>
             </div>
           </div>
 
@@ -153,21 +161,30 @@ export class AdventureModeView {
             </div>
           </div>
 
-          <!-- Active Trail Status Banner -->
-          <div class="flex items-center justify-between px-space-md py-space-sm bg-surface-container rounded-lg text-on-surface-variant font-label-md text-label-md">
+          <!-- Active Trail Status Banner (Clickable to Map) -->
+          <div class="flex items-center justify-between px-space-md py-space-sm bg-surface-container rounded-lg text-on-surface-variant font-label-md text-label-md cursor-pointer hover:bg-surface-container-high active:scale-[0.99] transition-all" id="adventure-trail-banner" title="Open Interactive Trail Map">
             <div class="flex items-center gap-space-xs truncate">
               <span class="material-symbols-outlined text-[18px] text-secondary">explore</span>
-              <span class="truncate">Redwood Creek Trailhead sector 4</span>
+              <span class="truncate font-semibold">Redwood Creek Trailhead sector 4</span>
             </div>
-            <span class="font-label-sm text-label-sm text-secondary shrink-0 pl-space-xs font-mono font-bold" id="adventure-km-label">${this.distanceKm.toFixed(2)} km</span>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <span class="font-label-sm text-label-sm text-secondary pl-space-xs font-mono font-bold" id="adventure-km-label">${this.distanceKm.toFixed(2)} km</span>
+              <span class="material-symbols-outlined text-[16px] text-secondary">chevron_right</span>
+            </div>
           </div>
 
           <!-- Bottom Thumb Actions Area -->
           <div class="flex flex-col gap-space-sm pt-space-xs pb-space-lg">
-            <button class="w-full h-12 rounded-lg bg-surface-card text-primary font-title-md text-title-md shadow-sm active:scale-[0.98] transition-all flex items-center justify-center gap-space-xs cursor-pointer border border-outline-hairline/60" id="pause-adventure-btn">
-              <span class="material-symbols-outlined text-[20px]" id="pause-icon">pause_circle</span>
-              <span id="pause-label">Pause Adventure</span>
-            </button>
+            <div class="grid grid-cols-2 gap-space-sm">
+              <button class="w-full h-12 rounded-lg bg-surface-card text-primary font-title-md text-title-md shadow-sm active:scale-[0.98] transition-all flex items-center justify-center gap-space-xs cursor-pointer border border-outline-hairline/60" id="open-field-map-btn" title="View Interactive Trail Map">
+                <span class="material-symbols-outlined text-[20px] text-secondary">map</span>
+                <span>Field Map</span>
+              </button>
+              <button class="w-full h-12 rounded-lg bg-surface-card text-primary font-title-md text-title-md shadow-sm active:scale-[0.98] transition-all flex items-center justify-center gap-space-xs cursor-pointer border border-outline-hairline/60" id="pause-adventure-btn">
+                <span class="material-symbols-outlined text-[20px]" id="pause-icon">pause_circle</span>
+                <span id="pause-label">Pause</span>
+              </button>
+            </div>
             <button class="w-full h-12 rounded-lg bg-primary-container text-vellum-bg font-title-md text-title-md shadow-md active:bg-secondary active:scale-[0.98] transition-all flex items-center justify-center gap-space-xs cursor-pointer" id="spotted-btn">
               <span class="material-symbols-outlined text-[20px]">photo_camera</span>
               <span>I Spotted It (Capture)</span>
@@ -213,15 +230,35 @@ export class AdventureModeView {
       }
     }, 1000);
 
-    // Refresh GPS coordinates
-    GeoLocationTracker.getCurrentPosition()
-      .then((coords) => {
-        const label = this.container.querySelector('#gps-telemetry-label');
-        if (label) {
-          label.textContent = `GPS Lock • ${coords.latitude.toFixed(4)}° N`;
-        }
-      })
-      .catch(() => {});
+    // Refresh GPS coordinates with hardware query
+    this.refreshGpsTelemetry(false);
+  }
+
+  private async refreshGpsTelemetry(forceFresh = false): Promise<void> {
+    try {
+      const coords = await GeoLocationTracker.getCurrentPosition(forceFresh);
+      const label = this.container.querySelector('#gps-telemetry-label');
+      const sourceLabel = this.container.querySelector('#gps-source-label');
+      const source = GeoLocationTracker.getLocationSource();
+
+      if (label) {
+        label.textContent = `GPS Lock • ${coords.latitude.toFixed(4)}° N, ${coords.longitude.toFixed(4)}° E`;
+      }
+      if (sourceLabel) {
+        const sourceDesc =
+          source === 'gps'
+            ? `Hardware GPS (±${coords.accuracy || 12}m)`
+            : source === 'network'
+            ? `Cellular/Wi-Fi (±${coords.accuracy || 45}m)`
+            : source === 'ip'
+            ? `Network Geolocation (±1km)`
+            : 'Estimated Field Sector';
+        sourceLabel.textContent = sourceDesc;
+      }
+    } catch {
+      const sourceLabel = this.container.querySelector('#gps-source-label');
+      if (sourceLabel) sourceLabel.textContent = 'Searching for Satellites...';
+    }
   }
 
   public stop(): void {
@@ -232,6 +269,34 @@ export class AdventureModeView {
   }
 
   private bindEvents(): void {
+    // Navigation to Map triggers
+    const viewMapStripBtn = this.container.querySelector('#view-map-strip-btn');
+    viewMapStripBtn?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.onOpenMap();
+    });
+
+    const openFieldMapBtn = this.container.querySelector('#open-field-map-btn');
+    openFieldMapBtn?.addEventListener('click', () => {
+      this.onOpenMap();
+    });
+
+    const trailBanner = this.container.querySelector('#adventure-trail-banner');
+    trailBanner?.addEventListener('click', () => {
+      this.onOpenMap();
+    });
+
+    // Telemetry Button: Tap to refresh position and/or jump to map
+    const telemetryBtn = this.container.querySelector('#gps-telemetry-btn');
+    telemetryBtn?.addEventListener('click', async () => {
+      telemetryBtn.classList.add('scale-95');
+      await this.refreshGpsTelemetry(true);
+      setTimeout(() => {
+        telemetryBtn.classList.remove('scale-95');
+        this.onOpenMap();
+      }, 200);
+    });
+
     const pauseBtn = this.container.querySelector('#pause-adventure-btn');
     const pauseIcon = this.container.querySelector('#pause-icon');
     const pauseLabel = this.container.querySelector('#pause-label');
@@ -241,12 +306,12 @@ export class AdventureModeView {
       this.isPaused = !this.isPaused;
       if (this.isPaused) {
         pauseIcon!.textContent = 'play_circle';
-        pauseLabel!.textContent = 'Resume Adventure';
+        pauseLabel!.textContent = 'Resume';
         if (statusLabel) statusLabel.textContent = 'Field Quest Paused';
         pauseBtn.classList.add('bg-amber-container', 'text-amber-on-container');
       } else {
         pauseIcon!.textContent = 'pause_circle';
-        pauseLabel!.textContent = 'Pause Adventure';
+        pauseLabel!.textContent = 'Pause';
         if (statusLabel) statusLabel.textContent = 'Passive Scan Active';
         pauseBtn.classList.remove('bg-amber-container', 'text-amber-on-container');
       }
