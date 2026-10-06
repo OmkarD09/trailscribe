@@ -1,0 +1,18 @@
+{
+  "name": "TrailScribe — Offline Naturalist Field Assistant",
+  "short_name": "TrailScribe",
+  "description": "Minimal screen-time offline-first field assistant for naturalists. Powered by local open-source AI.",
+  "start_url": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#070d0a",
+  "theme_color": "#070d0a",
+  "categories": ["nature", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

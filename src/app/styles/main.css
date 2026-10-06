@@ -1,0 +1,117 @@
+/* TrailScribe Design System - Main Stylesheet */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --vellum-bg: #f8f6f0;
+  --on-surface: #181d1a;
+  --on-surface-variant: #3b423d;
+  --primary: #042217;
+  --primary-container: #1b382b;
+  --on-primary-container: #82a291;
+  --secondary: #416652;
+  --secondary-container: #c0e9cf;
+  --on-secondary-container: #456a56;
+  --tertiary: #2c1a00;
+  --tertiary-fixed-dim: #feb956;
+  --amber-container: #ffddb4;
+  --amber-on-container: #633f00;
+  --surface-card: #ffffff;
+  --surface-card-subtle: #f2efe9;
+  --surface-container: #eae6dc;
+  --surface-container-high: #e5e9e4;
+  --sage-fill: #d3e0d8;
+  --obsidian-scrim: rgba(21, 26, 23, 0.78);
+  --outline-hairline: #e5e0d5;
+  --outline-border: #6b736d;
+}
+
+html, body {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: var(--vellum-bg);
+  color: var(--on-surface);
+  overscroll-behavior-y: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+::-webkit-scrollbar {
+  display: none;
+}
+
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  display: inline-block;
+  line-height: 1;
+  text-transform: none;
+  letter-spacing: normal;
+  word-wrap: normal;
+  white-space: nowrap;
+  direction: ltr;
+  vertical-align: middle;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Tactile Click & Active Transitions */
+.tactile-click {
+  transition: transform 0.12s ease-out, opacity 0.12s ease-out;
+}
+.tactile-click:active {
+  transform: scale(0.96);
+  opacity: 0.9;
+}
+
+/* Smooth Fade in for Screen Transitions */
+.view-enter {
+  animation: viewFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes viewFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Sound Wave Animation */
+@keyframes wavePulse1 {
+  0%, 100% { height: 12px; }
+  50% { height: 28px; }
+}
+@keyframes wavePulse2 {
+  0%, 100% { height: 24px; }
+  50% { height: 8px; }
+}
+@keyframes wavePulse3 {
+  0%, 100% { height: 16px; }
+  50% { height: 32px; }
+}
+
+.anim-wave-1 { animation: wavePulse1 0.75s ease-in-out infinite; }
+.anim-wave-2 { animation: wavePulse2 0.65s ease-in-out infinite 0.15s; }
+.anim-wave-3 { animation: wavePulse3 0.85s ease-in-out infinite 0.3s; }
+
+/* Shutter Ripple Ring */
+@keyframes ringRipple {
+  0% {
+    box-shadow: 0 0 0 0 rgba(205, 142, 46, 0.45);
+  }
+  70% {
+    box-shadow: 0 0 0 14px rgba(205, 142, 46, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(205, 142, 46, 0);
+  }
+}
+
+.shutter-ripple {
+  animation: ringRipple 1.6s infinite;
+}
