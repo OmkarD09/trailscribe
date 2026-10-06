@@ -1,3 +1,5 @@
+import { db } from '../../storage/db';
+
 export class HomeDashboardView {
   private container: HTMLElement;
   private onStartAdventure: () => void;
@@ -21,7 +23,9 @@ export class HomeDashboardView {
     this.onOpenProfile = callbacks.onOpenProfile;
   }
 
-  render(): void {
+  async render(): Promise<void> {
+    const recentItems = await db.getRecentObservations(3);
+    const totalCount = await db.getCount();
     this.container.innerHTML = `
       <div class="flex flex-col w-full px-margin pb-space-lg space-y-space-md view-enter">
         <!-- Greeting & Environmental Status Bar -->
@@ -172,6 +176,7 @@ export class HomeDashboardView {
         </section>
 
         <!-- Recent Discoveries Header -->
+        <!-- Recent Discoveries Section -->
         <section class="space-y-space-sm pt-space-xs">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-1.5">
@@ -179,83 +184,46 @@ export class HomeDashboardView {
               <h3 class="font-headline-md text-headline-md text-primary font-serif">Recent Discoveries</h3>
             </div>
             <button class="font-label-sm text-label-sm tracking-wider uppercase text-secondary font-bold hover:text-primary transition-colors cursor-pointer" id="view-all-discoveries-btn">
-              View All (47)
+              View All (${totalCount})
             </button>
           </div>
           <!-- Discovery Cards Stack -->
-          <div class="space-y-space-sm">
-            <!-- Card 1: Asian Koel -->
-            <article class="recent-specimen-card flex items-center gap-space-md p-space-sm rounded-xl bg-surface-card shadow-[0_1px_3px_rgba(21,26,23,0.05),0_4px_12px_rgba(21,26,23,0.03)] active:bg-surface-card-subtle transition-colors cursor-pointer border border-outline-hairline/60" data-specimen="asian-koel">
-              <div class="relative w-20 h-20 rounded-lg overflow-hidden shrink-0 bg-surface-container">
-                <img class="w-full h-full object-cover" alt="Asian Koel" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBZruNU5OzscDzFmOUIUrBq_rRAkMv7R9YeRyA9fWsbFGVdyE9yHiWUAjwn1MqTALLIhuMRAeuv0-0Qvemsq_VWA9qftsCctpNqit-zbPZ9fP0anyZGF6yapuhihIb9Dnh2DXvyo6gQME3Wm2dUj16Q_1n54IhQR7YQloKlq0iuhZOt0u1ft2Lj3C6NOXCtvXzWZhZGlZF4fwWc2anyK0rMy0oSWCMzx08pEju7Ykc74Ya2C82QDp9H"/>
-                <div class="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-obsidian-scrim text-vellum-bg text-[10px] font-label-sm font-bold">
-                  92%
-                </div>
-              </div>
-              <div class="flex flex-col min-w-0 flex-1 py-0.5">
-                <div class="flex items-center justify-between gap-1">
-                  <span class="font-label-sm text-label-sm text-on-surface-variant">07:42 AM · Hanging Gardens</span>
-                  <span class="material-symbols-outlined text-[16px] text-secondary">chevron_right</span>
-                </div>
-                <h4 class="font-title-md text-title-md text-primary font-bold truncate mt-0.5">Asian Koel</h4>
-                <span class="font-latin-name text-latin-name italic text-secondary truncate">Eudynamys scolopaceus</span>
-                <div class="flex items-center gap-1.5 mt-2">
-                  <span class="px-2 py-0.5 rounded bg-sage-fill text-primary font-label-md text-label-md">Bird · Native</span>
-                  <span class="px-2 py-0.5 rounded bg-surface-card-subtle text-on-surface-variant font-label-md text-label-md">Diurnal</span>
-                </div>
-              </div>
-            </article>
-
-            <!-- Card 2: Neem Tree -->
-            <article class="recent-specimen-card flex items-center gap-space-md p-space-sm rounded-xl bg-surface-card shadow-[0_1px_3px_rgba(21,26,23,0.05),0_4px_12px_rgba(21,26,23,0.03)] active:bg-surface-card-subtle transition-colors cursor-pointer border border-outline-hairline/60" data-specimen="neem">
-              <div class="relative w-20 h-20 rounded-lg overflow-hidden shrink-0 bg-surface-container">
-                <img class="w-full h-full object-cover" alt="Neem" src="https://lh3.googleusercontent.com/aida-public/AB6AXuACW9Uk4_w77Z_nUlQr5mOUZ0S6FaQWQXtHthTfRd7v0YT90G0Zl5Oz6wI62vRaJyfq_aXMIhurGZzBhDgX_NoxMkGJS60mXWCSl5BkcshECXF9dqmyyng4tRFVAQq1BZ9C08mMIBfx_XwAk05eu05TxjRJnFCJY8oReTEydd2t98M5GKOcd5V9mLncbGXZjlmK8bjFJ3QcFHS4rk0qEWrnFISCpw70Kh2aVJsd6TpeoYu7O8xzxz_s"/>
-                <div class="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-obsidian-scrim text-vellum-bg text-[10px] font-label-sm font-bold">
-                  98%
-                </div>
-              </div>
-              <div class="flex flex-col min-w-0 flex-1 py-0.5">
-                <div class="flex items-center justify-between gap-1">
-                  <span class="font-label-sm text-label-sm text-on-surface-variant">Yesterday · Sanjay Gandhi NP</span>
-                  <span class="material-symbols-outlined text-[16px] text-secondary">chevron_right</span>
-                </div>
-                <h4 class="font-title-md text-title-md text-primary font-bold truncate mt-0.5">Neem</h4>
-                <span class="font-latin-name text-latin-name italic text-secondary truncate">Azadirachta indica</span>
-                <div class="flex items-center gap-1.5 mt-2">
-                  <span class="px-2 py-0.5 rounded bg-sage-fill text-primary font-label-md text-label-md">Plant · Flora</span>
-                  <span class="px-2 py-0.5 rounded bg-surface-card-subtle text-on-surface-variant font-label-md text-label-md">Medicinal</span>
-                </div>
-              </div>
-            </article>
-
-            <!-- Card 3: Common Mormon -->
-            <article class="recent-specimen-card flex items-center gap-space-md p-space-sm rounded-xl bg-surface-card shadow-[0_1px_3px_rgba(21,26,23,0.05),0_4px_12px_rgba(21,26,23,0.03)] active:bg-surface-card-subtle transition-colors cursor-pointer border border-outline-hairline/60" data-specimen="common-mormon">
-              <div class="relative w-20 h-20 rounded-lg overflow-hidden shrink-0 bg-surface-container">
-                <img class="w-full h-full object-cover" alt="Common Mormon" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCEOIrzEhn0yiro68Ye6UR-IloHx77QrlTYn_OVzSYPBrYPOqIqD_RLRafVus8rvnmL7VUsZEZ2k3V-S2V7feYPbWh0GsateibIoMylvA4vioqNzNXRnTki8AUblNqc6L_krl9G4l3rOjhRE-yf6UYWwfhCfHRUuWeqbG5DsQzo40LT6RfLQud9mpb27xUQx6ZKG9cxOOjgvGAMkBwIBIQ21AX7mouNzmpWP71zf1evF3VOhB09Ao51"/>
-                <div class="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-obsidian-scrim text-vellum-bg text-[10px] font-label-sm font-bold">
-                  95%
-                </div>
-              </div>
-              <div class="flex flex-col min-w-0 flex-1 py-0.5">
-                <div class="flex items-center justify-between gap-1">
-                  <span class="font-label-sm text-label-sm text-on-surface-variant">May 16 · Aarey Milk Colony</span>
-                  <span class="material-symbols-outlined text-[16px] text-secondary">chevron_right</span>
-                </div>
-                <h4 class="font-title-md text-title-md text-primary font-bold truncate mt-0.5">Common Mormon</h4>
-                <span class="font-latin-name text-latin-name italic text-secondary truncate">Papilio polytes</span>
-                <div class="flex items-center gap-1.5 mt-2">
-                  <span class="px-2 py-0.5 rounded bg-sage-fill text-primary font-label-md text-label-md">Insect · Lepidoptera</span>
-                  <span class="px-2 py-0.5 rounded bg-surface-card-subtle text-on-surface-variant font-label-md text-label-md">Mimetic</span>
-                </div>
-              </div>
-            </article>
+          <div class="space-y-space-sm" id="recent-discoveries-stack">
+            ${recentItems.map((obs) => {
+              const confPct = Math.round((obs.confidenceScore ?? 0.94) * 100);
+              const photoUrl = obs.photoUrl || 'https://lh3.googleusercontent.com/aida-public/AB6AXuDCUa7mlEqL-Zl5MFy4hnfhdb1rSjhFiMP1X2DNG6Vo5QovjzpAhGZsqbSaUoPeyOcac-PgnfeM8FFl_kPrsPvaOnNMTifalb_GSZB8s5oB8VO9tc_ONVjzW9A-j8k015iT3EKJtrBT4ayxnjnMgbAmtNRkMPd-wXFa8Lfohw3pwxzB24U3-dsErWXk_cjLbviD12wqubyzkz1azwasGYEuckAoJmtzvlJmLCNsWLQbH_kn2pvGy8vb';
+              const timeLoc = obs.readableDate;
+              const groupText = obs.kingdomOrGroup === 'Aves' ? 'Bird · Native' : obs.kingdomOrGroup === 'Plantae' ? 'Plant · Flora' : obs.kingdomOrGroup === 'Insecta' ? 'Insect · Lepidoptera' : 'Fauna · Native';
+              return `
+                <article class="recent-specimen-card flex items-center gap-space-md p-space-sm rounded-xl bg-surface-card shadow-[0_1px_3px_rgba(21,26,23,0.05),0_4px_12px_rgba(21,26,23,0.03)] active:bg-surface-card-subtle transition-colors cursor-pointer border border-outline-hairline/60" data-specimen="${obs.id}">
+                  <div class="relative w-20 h-20 rounded-lg overflow-hidden shrink-0 bg-surface-container">
+                    <img class="w-full h-full object-cover" alt="${obs.commonName || 'Specimen'}" src="${photoUrl}"/>
+                    <div class="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-obsidian-scrim text-vellum-bg text-[10px] font-label-sm font-bold">
+                      ${confPct}%
+                    </div>
+                  </div>
+                  <div class="flex flex-col min-w-0 flex-1 py-0.5">
+                    <div class="flex items-center justify-between gap-1">
+                      <span class="font-label-sm text-label-sm text-on-surface-variant truncate">${timeLoc}</span>
+                      <span class="material-symbols-outlined text-[16px] text-secondary">chevron_right</span>
+                    </div>
+                    <h4 class="font-title-md text-title-md text-primary font-bold truncate mt-0.5">${obs.commonName || 'Natural Specimen'}</h4>
+                    <span class="font-latin-name text-latin-name italic text-secondary truncate">${obs.scientificName || 'Unknown Taxa'}</span>
+                    <div class="flex items-center gap-1.5 mt-2">
+                      <span class="px-2 py-0.5 rounded bg-sage-fill text-primary font-label-md text-label-md">${groupText}</span>
+                      <span class="px-2 py-0.5 rounded bg-surface-card-subtle text-on-surface-variant font-label-md text-label-md">Cataloged</span>
+                    </div>
+                  </div>
+                </article>
+              `;
+            }).join('')}
           </div>
         </section>
 
         <!-- Archival Journal Footer Note -->
         <div class="pt-space-xs text-center">
           <p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">
-            On-device catalog • 3 specimens pending sync
+            On-device catalog • ${totalCount} specimens in local archive
           </p>
         </div>
       </div>

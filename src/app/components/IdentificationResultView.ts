@@ -1,7 +1,10 @@
+import { db } from '../../storage/db';
+
 export class IdentificationResultView {
   private container: HTMLElement;
   private onAddToJournal: () => void;
   private specimenData?: {
+    id?: string;
     commonName?: string;
     scientificName?: string;
     photoUrl?: string;
@@ -17,6 +20,7 @@ export class IdentificationResultView {
       onAddToJournal: () => void;
     },
     specimenData?: {
+      id?: string;
       commonName?: string;
       scientificName?: string;
       photoUrl?: string;
@@ -216,12 +220,20 @@ export class IdentificationResultView {
     const journalLabel = this.container.querySelector('#journal-label');
 
     if (saveBtn && journalIcon && journalLabel) {
-      saveBtn.addEventListener('click', () => {
+      saveBtn.addEventListener('click', async () => {
         journalIcon.textContent = 'check_circle';
         journalIcon.classList.add('text-tertiary-fixed-dim');
         journalLabel.textContent = 'SAVED TO JOURNAL (FOLIO #12)';
         saveBtn.classList.remove('bg-primary-container');
         saveBtn.classList.add('bg-secondary');
+
+        try {
+          if (this.specimenData?.id) {
+            await db.updateObservation(this.specimenData.id, { synced: true });
+          }
+        } catch (e) {
+          console.warn('DB update notice:', e);
+        }
 
         setTimeout(() => {
           journalIcon.textContent = 'bookmark_added';

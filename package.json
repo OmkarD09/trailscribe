@@ -6,10 +6,12 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --experimental-strip-types tests/backend-validation.test.ts"
   },
   "devDependencies": {
     "autoprefixer": "^10.6.1",
+    "fake-indexeddb": "^6.2.5",
     "postcss": "^8.5.29",
     "tailwindcss": "^3.4.17",
     "typescript": "~6.0.2",

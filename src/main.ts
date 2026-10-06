@@ -1,5 +1,6 @@
 import './app/styles/main.css';
 
+import { db } from './storage/db';
 import { SplashWelcomeView } from './app/components/SplashWelcomeView';
 import { HomeDashboardView } from './app/components/HomeDashboardView';
 import { NatureScannerView } from './app/components/NatureScannerView';
@@ -122,7 +123,9 @@ class TrailScribeApp {
   private activeScannerInstance: NatureScannerView | null = null;
   private isSwitcherOpen: boolean = false;
 
-  init(): void {
+  async init(): Promise<void> {
+    await db.seedDefaultDataIfEmpty();
+
     const appEl = document.getElementById('app');
     if (!appEl) return;
 
@@ -374,7 +377,7 @@ class TrailScribeApp {
     }
   }
 
-  private renderScreen(screenId: ScreenId, container: HTMLElement): void {
+  private async renderScreen(screenId: ScreenId, container: HTMLElement): Promise<void> {
     switch (screenId) {
       case 'splash-welcome': {
         const view = new SplashWelcomeView(container, {
@@ -395,7 +398,7 @@ class TrailScribeApp {
           },
           onOpenProfile: () => this.navigateTo('naturalist-profile')
         });
-        view.render();
+        await view.render();
         break;
       }
 
@@ -413,7 +416,12 @@ class TrailScribeApp {
 
       case 'specimen-capture': {
         const view = new NatureScannerView(container, {
-          onCapture: () => this.navigateTo('identification-result'),
+          onCapture: (newSpecimenId) => {
+            if (newSpecimenId) {
+              this.selectedSpecimenId = newSpecimenId;
+            }
+            this.navigateTo('identification-result');
+          },
           onListenForNature: () => this.navigateTo('sound-identification'),
           onOpenFolio: () => this.navigateTo('field-journal')
         });
@@ -431,7 +439,7 @@ class TrailScribeApp {
       }
 
       case 'identification-result': {
-        const specimenData = this.getSpecimenDetails(this.selectedSpecimenId);
+        const specimenData = await this.getSpecimenDetails(this.selectedSpecimenId);
         const view = new IdentificationResultView(
           container,
           {
@@ -450,7 +458,7 @@ class TrailScribeApp {
             this.navigateTo('identification-result');
           }
         });
-        view.render();
+        await view.render();
         break;
       }
 
@@ -480,7 +488,21 @@ class TrailScribeApp {
     }
   }
 
-  private getSpecimenDetails(specimenId: string) {
+  private async getSpecimenDetails(specimenId: string) {
+    const obs = await db.getObservation(specimenId);
+    if (obs) {
+      return {
+        id: obs.id,
+        commonName: obs.commonName || 'Natural Specimen',
+        scientificName: obs.scientificName || 'Unknown Taxa',
+        photoUrl: obs.photoUrl,
+        confidence: Math.round((obs.confidenceScore ?? 0.94) * 100),
+        locationText: obs.habitat?.split('·')[0]?.trim() || 'Field Sector',
+        coordsText: obs.coordinates ? `${obs.coordinates.latitude.toFixed(4)}° N, ${obs.coordinates.longitude.toFixed(4)}° E` : '19.0438° N, 73.0674° E',
+        timeText: obs.readableDate.split('·')[1]?.trim() || 'Today'
+      };
+    }
+
     switch (specimenId) {
       case 'asian-koel':
         return {
