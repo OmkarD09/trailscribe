@@ -26,7 +26,15 @@ export class AdventureMapView {
       options: {
         maxZoom: 19,
         subdomains: 'abcd',
-        attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+        attribution: '&copy; OpenStreetMap &copy; CARTO'
+      }
+    },
+    {
+      name: 'Street Topo',
+      url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      options: {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
       }
     },
     {
@@ -34,15 +42,15 @@ export class AdventureMapView {
       url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
       options: {
         maxZoom: 19,
-        attribution: 'Tiles &copy; Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP'
+        attribution: 'Tiles &copy; Esri, Earthstar, USGS'
       }
     },
     {
-      name: 'Outdoor Topo',
+      name: 'Ridge Topo',
       url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
       options: {
         maxZoom: 17,
-        attribution: 'Map &copy; OpenStreetMap, SRTM | Style &copy; OpenTopoMap (CC-BY-SA)'
+        attribution: 'Map &copy; OpenStreetMap | Style &copy; OpenTopoMap'
       }
     }
   ];
@@ -67,7 +75,7 @@ export class AdventureMapView {
     this.observations = await db.getAllObservations();
     const discoveriesCount = this.observations.length > 0 ? this.observations.length : 5;
 
-    // Fetch user position
+    // Fetch live user position
     try {
       this.userCoords = await GeoLocationTracker.getCurrentPosition(false);
     } catch {
@@ -84,9 +92,9 @@ export class AdventureMapView {
     this.container.innerHTML = `
       <div class="flex flex-col w-full relative view-enter">
         <!-- Interactive Topographic Canvas Container -->
-        <div class="relative w-full h-[520px] overflow-hidden bg-surface-container select-none" id="map-viewport-box">
+        <div class="relative w-full h-[520px] overflow-hidden bg-surface-container" id="map-viewport-box">
           <!-- Real Interactive Leaflet Map Instance -->
-          <div id="leaflet-map-canvas" class="w-full h-full z-0"></div>
+          <div id="leaflet-map-canvas" class="w-full h-[520px] min-h-[520px]" style="width: 100%; height: 520px; min-height: 520px; position: relative;"></div>
 
           <!-- Floating Top Trip Strip Card: Live Expedition Telemetry (Clickable to Adventure) -->
           <div class="absolute top-4 inset-x-margin z-[1000] cursor-pointer" id="trip-strip-card" title="Open Active Adventure Mode">
@@ -119,23 +127,35 @@ export class AdventureMapView {
           </div>
 
           <!-- Floating Map Field Controls (Right Side Utility Column) -->
-          <div class="absolute right-margin bottom-10 z-[1000] flex flex-col gap-space-sm">
+          <div class="absolute right-margin bottom-12 z-[1000] flex flex-col gap-2">
+            <!-- Zoom In Button -->
+            <button aria-label="Zoom In" class="w-11 h-11 rounded-full bg-surface-card/95 backdrop-blur-md text-primary shadow-lg flex items-center justify-center active:scale-95 transition-transform cursor-pointer border border-outline-hairline/60 hover:bg-surface-card" id="map-zoom-in-btn" title="Zoom In (+)">
+              <span class="material-symbols-outlined text-[20px] text-primary font-bold">add</span>
+            </button>
+            <!-- Zoom Out Button -->
+            <button aria-label="Zoom Out" class="w-11 h-11 rounded-full bg-surface-card/95 backdrop-blur-md text-primary shadow-lg flex items-center justify-center active:scale-95 transition-transform cursor-pointer border border-outline-hairline/60 hover:bg-surface-card" id="map-zoom-out-btn" title="Zoom Out (-)">
+              <span class="material-symbols-outlined text-[20px] text-primary font-bold">remove</span>
+            </button>
+            <!-- Fit All Discoveries Frame -->
+            <button aria-label="Fit All Discoveries" class="w-11 h-11 rounded-full bg-surface-card/95 backdrop-blur-md text-primary shadow-lg flex items-center justify-center active:scale-95 transition-transform cursor-pointer border border-outline-hairline/60 hover:bg-surface-card" id="map-fit-bounds-btn" title="Frame All Discoveries">
+              <span class="material-symbols-outlined text-[20px] text-secondary">filter_center_focus</span>
+            </button>
             <!-- Compass Button -->
-            <button aria-label="Compass Orientation" class="w-12 h-12 rounded-full bg-surface-card/95 backdrop-blur-md text-primary shadow-lg flex items-center justify-center active:scale-95 transition-transform cursor-pointer border border-outline-hairline/60" id="map-compass-btn" title="Align to Magnetic North">
-              <span class="material-symbols-outlined text-[22px] text-secondary" id="compass-needle-icon">explore</span>
+            <button aria-label="Compass Orientation" class="w-11 h-11 rounded-full bg-surface-card/95 backdrop-blur-md text-primary shadow-lg flex items-center justify-center active:scale-95 transition-transform cursor-pointer border border-outline-hairline/60 hover:bg-surface-card" id="map-compass-btn" title="Align to Magnetic North">
+              <span class="material-symbols-outlined text-[20px] text-secondary" id="compass-needle-icon">explore</span>
             </button>
             <!-- Topographic Layers Button -->
-            <button aria-label="Topographic Layers" class="w-12 h-12 rounded-full bg-surface-card/95 backdrop-blur-md text-primary shadow-lg flex items-center justify-center active:scale-95 transition-transform cursor-pointer border border-outline-hairline/60" id="map-layers-btn" title="Cycle Cartographic Style">
-              <span class="material-symbols-outlined text-[22px] text-secondary">layers</span>
+            <button aria-label="Topographic Layers" class="w-11 h-11 rounded-full bg-surface-card/95 backdrop-blur-md text-primary shadow-lg flex items-center justify-center active:scale-95 transition-transform cursor-pointer border border-outline-hairline/60 hover:bg-surface-card" id="map-layers-btn" title="Cycle Map Layer">
+              <span class="material-symbols-outlined text-[20px] text-secondary">layers</span>
             </button>
             <!-- Locate Me Button -->
-            <button aria-label="Locate Me" class="w-12 h-12 rounded-full bg-primary-container text-vellum-bg shadow-lg flex items-center justify-center active:scale-95 transition-transform cursor-pointer" id="map-locate-btn" title="Center GPS Position">
-              <span class="material-symbols-outlined text-[22px] text-tertiary-fixed-dim" style="font-variation-settings: 'FILL' 1;">my_location</span>
+            <button aria-label="Locate Me" class="w-11 h-11 rounded-full bg-primary-container text-vellum-bg shadow-lg flex items-center justify-center active:scale-95 transition-transform cursor-pointer hover:bg-secondary" id="map-locate-btn" title="Center Live GPS Position">
+              <span class="material-symbols-outlined text-[20px] text-tertiary-fixed-dim" style="font-variation-settings: 'FILL' 1;">my_location</span>
             </button>
           </div>
 
           <!-- Topographic Attribution & Altitude Ribbon -->
-          <div class="absolute left-margin bottom-10 z-[1000] px-3 py-1.5 rounded-full bg-surface-card/95 backdrop-blur-md shadow-lg flex items-center gap-1.5 border border-outline-hairline/60" id="map-elevation-ribbon">
+          <div class="absolute left-margin bottom-12 z-[1000] px-3.5 py-1.5 rounded-full bg-surface-card/95 backdrop-blur-md shadow-lg flex items-center gap-1.5 border border-outline-hairline/60" id="map-elevation-ribbon">
             <span class="w-2.5 h-2.5 rounded-full bg-secondary animate-pulse" id="gps-status-dot"></span>
             <span class="font-label-sm text-label-sm text-on-surface font-mono" id="map-gps-label">
               GPS LOCK · ${this.userCoords.latitude.toFixed(4)}° N, ${this.userCoords.longitude.toFixed(4)}° E (±${this.userCoords.accuracy || 15}m)
@@ -178,7 +198,7 @@ export class AdventureMapView {
                 <span class="font-label-sm text-label-sm text-on-surface-variant font-mono">Km 2.4</span>
               </div>
               <p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5 leading-relaxed">
-                Pannable topographic live sector. Touch or drag to explore field topography, streams, and cataloged wildlife coordinates.
+                Pannable topographic live sector. Touch or drag to explore field topography, streams, and cataloged wildlife coordinates. Tap any specimen in the folio below to fly directly to its location.
               </p>
             </div>
           </div>
@@ -186,20 +206,36 @@ export class AdventureMapView {
       </div>
     `;
 
-    this.initLeafletMap(validObs);
-    this.bindEvents();
+    // Wait for DOM reflow so Leaflet calculates true pixel container dimensions
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        this.initLeafletMap(validObs);
+      }, 50);
+    });
+
+    this.bindEvents(validObs);
   }
 
   private initLeafletMap(validObs: FieldObservation[]): void {
     const mapEl = this.container.querySelector('#leaflet-map-canvas') as HTMLElement;
     if (!mapEl) return;
 
+    // Destroy any existing map instance cleanly
+    this.destroyMap();
+
     // Create real interactive Leaflet map instance
     this.map = L.map(mapEl, {
       zoomControl: false,
       attributionControl: true,
-      minZoom: 3,
-      maxZoom: 19
+      minZoom: 2,
+      maxZoom: 19,
+      dragging: true,
+      touchZoom: true,
+      scrollWheelZoom: true,
+      doubleClickZoom: true,
+      boxZoom: true,
+      keyboard: true,
+      bounceAtZoomLimits: true
     });
 
     // Create authentic Cartographic tile layers
@@ -209,10 +245,13 @@ export class AdventureMapView {
     this.activeLayerIndex = 0;
     this.tileLayers[0].addTo(this.map);
 
-    // Initial view set to user coordinates
+    // Initial view set directly to user coordinates at zoom 15 WITHOUT ANIMATION
     const initialLat = this.userCoords.latitude;
     const initialLon = this.userCoords.longitude;
-    this.map.setView([initialLat, initialLon], 14);
+    this.map.setView([initialLat, initialLon], 15, { animate: false });
+
+    // Invalidate container size to force accurate tile grid calculation
+    this.map.invalidateSize(false);
 
     // Add user location pulsing beacon marker
     this.renderUserLocationMarker();
@@ -220,23 +259,11 @@ export class AdventureMapView {
     // Add observation markers for all cataloged sightings
     this.renderObservationMarkers(validObs);
 
-    // Fit map bounds if observations exist around user
-    if (validObs.length > 0) {
-      const allPoints: [number, number][] = [
-        [initialLat, initialLon],
-        ...validObs.map((o) => [o.coordinates!.latitude, o.coordinates!.longitude] as [number, number])
-      ];
-      try {
-        const bounds = L.latLngBounds(allPoints);
-        this.map.fitBounds(bounds, { padding: [60, 60], maxZoom: 15 });
-      } catch {
-        // Fallback keep center
-      }
-    }
-
-    // Force Leaflet recalculation after DOM injection
+    // Safety re-check container size after DOM settlement
     setTimeout(() => {
-      this.map?.invalidateSize();
+      if (this.map) {
+        this.map.invalidateSize(false);
+      }
     }, 150);
   }
 
@@ -247,7 +274,9 @@ export class AdventureMapView {
 
     // User accuracy circle
     if (this.userAccuracyCircle) {
-      this.userAccuracyCircle.remove();
+      try {
+        this.userAccuracyCircle.remove();
+      } catch {}
     }
     this.userAccuracyCircle = L.circle(latLng, {
       radius: Math.max(15, this.userCoords.accuracy || 25),
@@ -260,7 +289,9 @@ export class AdventureMapView {
 
     // User Beacon Pin
     if (this.userMarker) {
-      this.userMarker.remove();
+      try {
+        this.userMarker.remove();
+      } catch {}
     }
 
     const userBeaconHtml = `
@@ -277,7 +308,7 @@ export class AdventureMapView {
       className: 'user-beacon-pin',
       html: userBeaconHtml,
       iconSize: [20, 20],
-      iconAnchor: [0, 0]
+      iconAnchor: [10, 10]
     });
 
     this.userMarker = L.marker(latLng, {
@@ -291,7 +322,9 @@ export class AdventureMapView {
 
     // Clear previous markers
     for (const m of this.observationMarkers) {
-      m.remove();
+      try {
+        m.remove();
+      } catch {}
     }
     this.observationMarkers = [];
 
@@ -340,7 +373,7 @@ export class AdventureMapView {
         className: 'discovery-pin-icon',
         html: pinHtml,
         iconSize: [36, 36],
-        iconAnchor: [0, 0]
+        iconAnchor: [18, 18]
       });
 
       const marker = L.marker([obs.coordinates.latitude, obs.coordinates.longitude], {
@@ -451,7 +484,7 @@ export class AdventureMapView {
       .join('');
   }
 
-  private bindEvents(): void {
+  private bindEvents(validObs: FieldObservation[]): void {
     // Top Trip Strip Card: Open Adventure Mode
     const tripStrip = this.container.querySelector('#trip-strip-card');
     tripStrip?.addEventListener('click', () => {
@@ -460,7 +493,7 @@ export class AdventureMapView {
       }
     });
 
-    // Carousel Cards: Click to pan map directly to that specimen!
+    // Carousel Cards: Click to fly smoothly directly to that specimen!
     const cards = this.container.querySelectorAll('.map-carousel-card');
     cards.forEach((card) => {
       card.addEventListener('click', () => {
@@ -483,6 +516,50 @@ export class AdventureMapView {
       this.onViewFolio();
     });
 
+    // Zoom In Button
+    const zoomInBtn = this.container.querySelector('#map-zoom-in-btn');
+    zoomInBtn?.addEventListener('click', () => {
+      if (this.map) {
+        this.map.zoomIn();
+      }
+    });
+
+    // Zoom Out Button
+    const zoomOutBtn = this.container.querySelector('#map-zoom-out-btn');
+    zoomOutBtn?.addEventListener('click', () => {
+      if (this.map) {
+        this.map.zoomOut();
+      }
+    });
+
+    // Fit All Discoveries Frame
+    const fitBoundsBtn = this.container.querySelector('#map-fit-bounds-btn');
+    const toast = this.container.querySelector('#layer-mode-toast') as HTMLElement;
+    fitBoundsBtn?.addEventListener('click', () => {
+      if (!this.map) return;
+      const allPoints: [number, number][] = [
+        [this.userCoords.latitude, this.userCoords.longitude],
+        ...validObs.map((o) => [o.coordinates!.latitude, o.coordinates!.longitude] as [number, number])
+      ];
+      if (allPoints.length > 0) {
+        try {
+          const bounds = L.latLngBounds(allPoints);
+          this.map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
+          if (toast) {
+            toast.textContent = 'Frame: All Discoveries';
+            toast.classList.remove('opacity-0');
+            toast.classList.add('opacity-100');
+            setTimeout(() => {
+              toast.classList.remove('opacity-100');
+              toast.classList.add('opacity-0');
+            }, 1500);
+          }
+        } catch {
+          // fallback
+        }
+      }
+    });
+
     // Compass Button: Re-align North & pan to user position
     const compassBtn = this.container.querySelector('#map-compass-btn');
     const needleIcon = this.container.querySelector('#compass-needle-icon') as HTMLElement;
@@ -497,15 +574,15 @@ export class AdventureMapView {
       }
     });
 
-    // Cartographic Layer Switcher (Cycles real tiles: Vellum Topo -> Canopy Satellite -> Outdoor Topo)
+    // Cartographic Layer Switcher (Cycles: Vellum Topo -> Street Topo -> Canopy Satellite -> Ridge Topo)
     const layersBtn = this.container.querySelector('#map-layers-btn');
-    const toast = this.container.querySelector('#layer-mode-toast') as HTMLElement;
-
     layersBtn?.addEventListener('click', () => {
       if (!this.map || this.tileLayers.length === 0) return;
 
       // Remove current layer
-      this.tileLayers[this.activeLayerIndex].remove();
+      try {
+        this.tileLayers[this.activeLayerIndex].remove();
+      } catch {}
 
       // Cycle to next layer
       this.activeLayerIndex = (this.activeLayerIndex + 1) % this.tileLayers.length;
@@ -602,9 +679,15 @@ export class AdventureMapView {
   public destroyMap(): void {
     if (this.map) {
       try {
+        this.map.stop();
+        this.map.eachLayer((layer) => {
+          try {
+            this.map?.removeLayer(layer);
+          } catch {}
+        });
         this.map.remove();
-      } catch {
-        // Safe destroy
+      } catch (err) {
+        console.warn('Map cleanup notice:', err);
       }
       this.map = null;
     }

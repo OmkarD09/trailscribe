@@ -1,4 +1,4 @@
-const CACHE_NAME = 'trailscribe-v1';
+const CACHE_NAME = 'trailscribe-v2';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -27,28 +27,31 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Stale-while-revalidate / cache-first for local assets
+  // Only process GET requests
+  if (event.request.method !== 'GET') return;
+
+  // Network-First with Offline Fallback
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-      return fetch(event.request).then((response) => {
-        // Cache dynamic assets if valid
-        if (!response || response.status !== 200 || response.type !== 'basic') {
-          return response;
+    fetch(event.request)
+      .then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache);
+          });
         }
-        const responseToCache = response.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, responseToCache);
+        return networkResponse;
+      })
+      .catch(() => {
+        return caches.match(event.request).then((cachedResponse) => {
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+          if (event.request.mode === 'navigate') {
+            return caches.match('./index.html');
+          }
+          return new Response('Offline and not cached', { status: 503, statusText: 'Offline' });
         });
-        return response;
-      }).catch(() => {
-        // Fallback for offline navigation
-        if (event.request.mode === 'navigate') {
-          return caches.match('./index.html');
-        }
-      });
-    })
+      })
   );
 });
