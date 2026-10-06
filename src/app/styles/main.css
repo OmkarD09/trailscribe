@@ -115,3 +115,60 @@ html, body {
 .shutter-ripple {
   animation: ringRipple 1.6s infinite;
 }
+
+/* Leaflet Topographic Map Theme Styles */
+#leaflet-map-canvas {
+  width: 100%;
+  height: 100%;
+  background-color: var(--surface-container);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.leaflet-container {
+  font-family: inherit;
+  background-color: #eae6dc;
+}
+
+/* Custom Archival Leaflet Popups */
+.leaflet-popup-content-wrapper {
+  background-color: #f8f6f0 !important;
+  color: #181d1a !important;
+  border-radius: 1rem !important;
+  box-shadow: 0 10px 25px -5px rgba(21, 26, 23, 0.25) !important;
+  border: 1px solid rgba(229, 224, 213, 0.8) !important;
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+.leaflet-popup-content {
+  margin: 0 !important;
+  line-height: 1.4 !important;
+}
+
+.leaflet-popup-tip {
+  background-color: #f8f6f0 !important;
+  box-shadow: none !important;
+}
+
+.leaflet-container a.leaflet-popup-close-button {
+  top: 8px !important;
+  right: 8px !important;
+  color: #ffffff !important;
+  background-color: rgba(21, 26, 23, 0.6) !important;
+  border-radius: 9999px !important;
+  width: 22px !important;
+  height: 22px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 14px !important;
+}
+
+.leaflet-control-attribution {
+  background: rgba(248, 246, 240, 0.8) !important;
+  font-size: 9px !important;
+  font-family: 'Plus Jakarta Sans', monospace !important;
+  color: #727974 !important;
+  padding: 2px 6px !important;
+  border-top-left-radius: 6px !important;
+}

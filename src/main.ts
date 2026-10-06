@@ -123,6 +123,7 @@ class TrailScribeApp {
   private activeScannerInstance: NatureScannerView | null = null;
   private activeSoundInstance: SoundIdentificationView | null = null;
   private activeAdventureInstance: AdventureModeView | null = null;
+  private activeMapInstance: AdventureMapView | null = null;
   private lastAdventureSummary: AdventureSessionSummary | null = null;
   private isSwitcherOpen: boolean = false;
 
@@ -343,6 +344,12 @@ class TrailScribeApp {
       this.activeAdventureInstance = null;
     }
 
+    // Clean up active map instance if leaving offline map
+    if (this.previousScreen === 'offline-map' && this.activeMapInstance) {
+      this.activeMapInstance.destroyMap();
+      this.activeMapInstance = null;
+    }
+
     const meta = SCREENS[screenId];
     const headerEl = document.getElementById('stitch-header');
     const navEl = document.getElementById('stitch-nav');
@@ -445,6 +452,7 @@ class TrailScribeApp {
           onViewFolio: () => this.navigateTo('field-journal'),
           onOpenAdventure: () => this.navigateTo('adventure-mode')
         });
+        this.activeMapInstance = view;
         await view.render();
         break;
       }
