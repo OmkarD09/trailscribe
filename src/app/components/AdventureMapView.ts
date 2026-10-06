@@ -21,12 +21,11 @@ export class AdventureMapView {
 
   private readonly layerConfigs = [
     {
-      name: 'Vellum Topo',
-      url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+      name: 'World Topo',
+      url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
       options: {
         maxZoom: 19,
-        subdomains: 'abcd',
-        attribution: '&copy; OpenStreetMap &copy; CARTO'
+        attribution: 'Tiles &copy; Esri &mdash; Sources: GEBCO, USGS, Garmin'
       }
     },
     {
@@ -34,7 +33,7 @@ export class AdventureMapView {
       url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
       options: {
         maxZoom: 19,
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       }
     },
     {
@@ -43,6 +42,14 @@ export class AdventureMapView {
       options: {
         maxZoom: 19,
         attribution: 'Tiles &copy; Esri, Earthstar, USGS'
+      }
+    },
+    {
+      name: 'Field Terrain',
+      url: 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
+      options: {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors, Humanitarian style'
       }
     },
     {
@@ -164,7 +171,7 @@ export class AdventureMapView {
 
           <!-- Map Layer Indicator Toast (Ephemeral) -->
           <div id="layer-mode-toast" class="absolute top-28 left-1/2 -translate-x-1/2 px-3.5 py-1.5 rounded-full bg-obsidian-scrim text-vellum-bg font-label-sm text-label-sm uppercase tracking-wider font-mono opacity-0 transition-opacity duration-300 pointer-events-none z-[1001] shadow-xl">
-            Layer: Vellum Topo
+            Layer: World Topo
           </div>
         </div>
 
