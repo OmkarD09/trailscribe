@@ -227,7 +227,18 @@ class TrailScribeApp {
     `;
 
     this.bindGlobalEvents();
-    this.navigateTo('field-hub');
+
+    // Hash-based routing initialization
+    const hash = window.location.hash.replace(/^#\/?/, '') as ScreenId;
+    const initialScreen = hash && SCREENS[hash] ? hash : 'field-hub';
+    this.navigateTo(initialScreen, false);
+
+    window.addEventListener('hashchange', () => {
+      const targetHash = window.location.hash.replace(/^#\/?/, '') as ScreenId;
+      if (targetHash && SCREENS[targetHash] && targetHash !== this.currentScreen) {
+        this.navigateTo(targetHash, false);
+      }
+    });
   }
 
   private bindGlobalEvents(): void {
@@ -303,9 +314,16 @@ class TrailScribeApp {
     }
   }
 
-  public navigateTo(screenId: ScreenId): void {
+  public navigateTo(screenId: ScreenId, updateHash = true): void {
     this.previousScreen = this.currentScreen;
     this.currentScreen = screenId;
+
+    if (updateHash && typeof window !== 'undefined') {
+      const cleanHash = window.location.hash.replace(/^#\/?/, '');
+      if (cleanHash !== screenId) {
+        window.location.hash = screenId;
+      }
+    }
 
     // Clean up active scanner video stream if leaving scanner
     if (this.previousScreen === 'specimen-capture' && this.activeScannerInstance) {
