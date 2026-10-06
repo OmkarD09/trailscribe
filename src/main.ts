@@ -136,32 +136,34 @@ class TrailScribeApp {
     // Render App Framework
     appEl.innerHTML = `
       <!-- Fixed Stitch Top Bar Header -->
-      <header id="stitch-header" class="fixed top-0 inset-x-0 z-50 bg-vellum-bg/90 backdrop-blur-xl pt-safe shadow-[0_1px_8px_rgba(21,26,23,0.04)] max-w-[480px] mx-auto">
-        <div class="h-16 px-margin flex items-center justify-between gap-space-sm">
-          <div class="flex items-center gap-space-sm min-w-0 flex-1" id="header-leading-group">
-            <button aria-label="Go back" class="w-11 h-11 -ml-1 rounded-full flex items-center justify-center text-primary hover:bg-surface-container active:scale-95 transition-all cursor-pointer hidden" id="header-back-btn">
-              <span class="material-symbols-outlined text-[24px]">arrow_back</span>
+      <header id="stitch-header" class="fixed top-0 inset-x-0 z-50 bg-vellum-bg/92 backdrop-blur-xl pt-safe shadow-[0_1px_6px_rgba(21,26,23,0.04)] max-w-[480px] mx-auto border-b border-outline-hairline/50">
+        <div class="h-14 px-margin flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5 min-w-0 flex-1" id="header-leading-group">
+            <button aria-label="Go back" class="w-9 h-9 -ml-1 rounded-full flex items-center justify-center text-primary hover:bg-surface-container active:scale-95 transition-all cursor-pointer hidden" id="header-back-btn">
+              <span class="material-symbols-outlined text-[20px]">arrow_back</span>
             </button>
-            <img alt="TrailScribe Logo" class="h-8 w-auto object-contain shrink-0" id="header-brand-logo" src="https://lh3.googleusercontent.com/aida/AEtjO1UJ4ad2LiDWHiIqCsFCgBI-5mZwdOsdoGnzGk6iZZZBTHS8UbsNGwzBsHkal0MDptQEHd4Wee8VpaCJbcaF_mMj2a5jpECvt-LCdqR77l5a86ncPV1BN4f-FMHRsFl4KYPvGxvYuwGQ6bnY1zgC8RmW_sZYWEqOA5bpFUFhqnI_5jN1JBYLnEdISXTsA1TmCLePr1j4DGcU_8IpHs2AIlQKoygreZR0-odP5qkZ0JvKaHMMZkvvzATGHA"/>
+            <div class="w-7 h-7 rounded-lg bg-primary-container text-vellum-bg flex items-center justify-center shrink-0 shadow-xs" id="header-brand-logo">
+              <span class="material-symbols-outlined text-[17px] text-tertiary-fixed-dim">nest_eco_leaf</span>
+            </div>
             <div class="flex flex-col min-w-0" id="header-title-container">
-              <span class="font-label-sm text-label-sm tracking-wider uppercase text-secondary font-bold truncate">TrailScribe</span>
-              <h1 class="font-headline-md text-headline-md text-primary truncate leading-none font-serif" id="header-title-text">Field Hub</h1>
+              <span class="text-[9.5px] tracking-widest uppercase text-secondary font-bold truncate leading-none">TrailScribe</span>
+              <h1 class="text-[16px] font-bold text-primary truncate leading-tight font-serif mt-0.5" id="header-title-text">Field Hub</h1>
             </div>
           </div>
-          <div class="flex items-center gap-space-sm shrink-0">
-            <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-obsidian-scrim text-vellum-bg cursor-pointer hover:opacity-90 active:scale-95 transition-all" id="header-status-pill" title="Stitch Screen Matrix">
+          <div class="flex items-center gap-2 shrink-0">
+            <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-obsidian-scrim text-vellum-bg cursor-pointer hover:opacity-90 active:scale-95 transition-all" id="header-status-pill" title="Stitch Screen Matrix">
               <span class="w-1.5 h-1.5 rounded-full bg-tertiary-fixed-dim animate-pulse"></span>
-              <span class="font-label-sm text-label-sm tracking-wider uppercase font-bold text-vellum-bg">Local AI • Offline</span>
+              <span class="text-[10px] tracking-wider uppercase font-bold text-vellum-bg">Offline AI</span>
             </div>
-            <button class="w-11 h-11 rounded-full p-0.5 flex items-center justify-center cursor-pointer hover:opacity-90 active:scale-95 transition-transform" id="header-profile-btn" aria-label="Naturalist Profile">
-              <img alt="Profile" class="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBmrP4X-EhK77vuSbVHvx4HHZFwzrPVQFyfECy4Heo5B8jqaJtGZvT9-AzEI9T9CFRjoCe4TmBXZAHu9rHJmrFzJAx34apRTWVsZJFFa1LuAgQCFesHb_GouVnlEf1dOqfp_dLnwlMfDgsp_XVRYyM51rGsw64pZiXitM7WAf-9iBTLy3-OvL2lSOKIFTcf-8zS3fbsgRvxeXrM0NSUpYCFxqBpLbJ8JC2TaEmJKTwKzX5yztS8w6Ay"/>
+            <button class="w-9 h-9 rounded-full p-0.5 flex items-center justify-center cursor-pointer hover:opacity-90 active:scale-95 transition-transform" id="header-profile-btn" aria-label="Naturalist Profile">
+              <img alt="Profile" class="w-7 h-7 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBmrP4X-EhK77vuSbVHvx4HHZFwzrPVQFyfECy4Heo5B8jqaJtGZvT9-AzEI9T9CFRjoCe4TmBXZAHu9rHJmrFzJAx34apRTWVsZJFFa1LuAgQCFesHb_GouVnlEf1dOqfp_dLnwlMfDgsp_XVRYyM51rGsw64pZiXitM7WAf-9iBTLy3-OvL2lSOKIFTcf-8zS3fbsgRvxeXrM0NSUpYCFxqBpLbJ8JC2TaEmJKTwKzX5yztS8w6Ay"/>
             </button>
           </div>
         </div>
       </header>
 
       <!-- Main Dynamic Content Container -->
-      <main id="app-viewport" class="flex flex-col relative w-full pt-16 min-h-screen bg-vellum-bg"></main>
+      <main id="app-viewport" class="flex flex-col relative w-full pt-14 min-h-screen bg-vellum-bg"></main>
 
       <!-- Fixed Stitch Bottom Navigation Bar -->
       <nav id="stitch-nav" class="fixed bottom-0 inset-x-0 z-50 pb-safe bg-vellum-bg/95 backdrop-blur-xl shadow-[0_-4px_16px_rgba(21,26,23,0.06)] max-w-[480px] mx-auto border-t border-outline-hairline/60">

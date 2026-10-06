@@ -107,16 +107,17 @@ export class NatureScannerView {
           </div>
 
           <!-- Telemetry Status Bar -->
-          <div class="absolute top-3 inset-x-3 flex items-center justify-between pointer-events-auto z-20">
-            <button id="toggle-camera-source-btn" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-obsidian-scrim shadow-md cursor-pointer hover:bg-obsidian-scrim/90 active:scale-95 transition-all" title="Toggle Live Lens / Viewfinder Mode">
-              <span class="w-2 h-2 rounded-full bg-tertiary-fixed-dim animate-pulse" id="camera-status-dot"></span>
-              <span class="font-label-sm text-label-sm text-vellum-bg uppercase tracking-wider font-semibold" id="camera-status-label">Local Vision AI • Offline</span>
+          <!-- Telemetry Status Bar -->
+          <div class="absolute top-3 inset-x-2.5 flex items-center justify-between pointer-events-auto z-20">
+            <button id="toggle-camera-source-btn" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-obsidian-scrim shadow-md cursor-pointer hover:bg-obsidian-scrim/90 active:scale-95 transition-all" title="Toggle Live Lens / Viewfinder Mode">
+              <span class="w-1.5 h-1.5 rounded-full bg-tertiary-fixed-dim animate-pulse" id="camera-status-dot"></span>
+              <span class="text-[10px] text-vellum-bg uppercase tracking-wider font-semibold" id="camera-status-label">Vision AI • Offline</span>
             </button>
             <!-- Optical Sensor Parameters / Lux Telemetry -->
-            <div class="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-obsidian-scrim text-vellum-bg shadow-md font-label-sm text-label-sm">
+            <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-obsidian-scrim text-vellum-bg shadow-md text-[10px]">
               <div class="flex items-center gap-1 text-tertiary-fixed-dim">
-                <span class="material-symbols-outlined text-[16px]">wb_sunny</span>
-                <span class="font-mono" id="lux-val">42,500 lx</span>
+                <span class="material-symbols-outlined text-[13px]">wb_sunny</span>
+                <span class="font-mono" id="lux-val">42k lx</span>
               </div>
               <span class="opacity-40">|</span>
               <span class="font-mono tracking-tight text-surface-container">ƒ/1.8 · 1/640s</span>
@@ -124,7 +125,7 @@ export class NatureScannerView {
           </div>
 
           <!-- Target Tracking Bounding Box & Focus Reticle -->
-          <div class="absolute top-[32%] left-[28%] w-44 h-44 pointer-events-none transition-all duration-300 transform -translate-x-2 -translate-y-2 z-20" id="reticle-target">
+          <div class="absolute top-[32%] left-[28%] w-44 h-44 pointer-events-none transition-all duration-300 transform -translate-x-2 -translate-y-2 z-20 hidden" id="reticle-target">
             <!-- Amber Reticle Arc Ring -->
             <svg class="w-full h-full animate-[spin_12s_linear_infinite]" viewbox="0 0 100 100">
               <circle class="opacity-90" cx="50" cy="50" fill="none" r="44" stroke="#feb956" stroke-dasharray="8 6" stroke-width="2"></circle>
@@ -133,9 +134,9 @@ export class NatureScannerView {
             <div class="absolute inset-3 border-2 border-transparent border-t-amber-container border-l-amber-container rounded-tl-lg"></div>
             <div class="absolute inset-3 border-2 border-transparent border-b-amber-container border-r-amber-container rounded-br-lg"></div>
             <!-- Real-Time Classification Tooltip -->
-            <div class="absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap bg-obsidian-scrim px-2.5 py-1 rounded-full shadow-lg flex items-center gap-1.5">
-              <span id="reticle-label" class="font-label-sm text-label-sm text-vellum-bg font-medium tracking-wide flex items-center gap-1.5">
-                <span class="material-symbols-outlined text-tertiary-fixed-dim text-[14px]">center_focus_strong</span>
+            <div class="absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap bg-obsidian-scrim px-2.5 py-0.5 rounded-full shadow-lg flex items-center gap-1.5">
+              <span id="reticle-label" class="text-[10px] text-vellum-bg font-medium tracking-wide flex items-center gap-1">
+                <span class="material-symbols-outlined text-tertiary-fixed-dim text-[13px]">center_focus_strong</span>
                 <span>Seeking Subject...</span>
               </span>
             </div>
@@ -159,25 +160,25 @@ export class NatureScannerView {
         </div>
 
         <!-- Lower Tactical HUD & Specimen Extraction Strip -->
-        <div class="flex-1 bg-vellum-bg flex flex-col justify-between p-space-md min-h-[220px]">
+        <div class="flex-1 bg-vellum-bg flex flex-col justify-between p-3 min-h-[200px]">
           <!-- Top Auxiliary Classification Bar -->
-          <div class="flex items-center justify-between gap-space-sm">
-            <div class="flex items-center gap-2.5 bg-surface-card px-3 py-1.5 rounded-xl shadow-sm border border-outline-hairline/60 flex-1 min-w-0 cursor-pointer active:scale-95 transition-all" id="candidate-card" title="Click to view specimen details">
-              <div class="w-7 h-7 rounded-lg bg-sage-fill flex items-center justify-center text-primary shrink-0">
-                <span class="material-symbols-outlined text-[18px]" id="candidate-icon">photo_camera</span>
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2 bg-surface-card px-2.5 py-1.5 rounded-xl shadow-sm border border-outline-hairline/60 flex-1 min-w-0 cursor-pointer active:scale-95 transition-all" id="candidate-card" title="Click to view specimen details">
+              <div class="w-6 h-6 rounded-lg bg-sage-fill flex items-center justify-center text-primary shrink-0">
+                <span class="material-symbols-outlined text-[15px]" id="candidate-icon">photo_camera</span>
               </div>
               <div class="flex flex-col min-w-0">
-                <span class="font-label-sm text-label-sm text-secondary font-bold uppercase tracking-wider" id="candidate-status-label">Optical Viewfinder Ready</span>
-                <span class="font-title-md text-title-md text-primary font-bold truncate leading-none" id="candidate-name-label">
+                <span class="text-[9px] text-secondary font-bold uppercase tracking-wider truncate leading-tight" id="candidate-status-label">Optical Viewfinder Ready</span>
+                <span class="text-[13px] text-primary font-bold truncate leading-tight" id="candidate-name-label">
                   Align Specimen or Upload Photo
                 </span>
               </div>
             </div>
 
             <!-- Bio-Acoustic Trigger Pill -->
-            <button class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary-container text-vellum-bg shadow-sm hover:opacity-90 active:scale-95 transition-all cursor-pointer shrink-0" id="listen-trigger" title="Switch to Audio Spectrogram">
-              <span class="material-symbols-outlined text-[18px] text-tertiary-fixed-dim animate-pulse">graphic_eq</span>
-              <span class="font-label-sm text-label-sm uppercase tracking-wider font-semibold">LISTEN FOR NATURE</span>
+            <button class="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-primary-container text-vellum-bg shadow-sm hover:opacity-90 active:scale-95 transition-all cursor-pointer shrink-0" id="listen-trigger" title="Switch to Audio Spectrogram">
+              <span class="material-symbols-outlined text-[15px] text-tertiary-fixed-dim animate-pulse">graphic_eq</span>
+              <span class="text-[10px] uppercase tracking-wider font-semibold">Listen Audio</span>
             </button>
           </div>
 
@@ -221,12 +222,12 @@ export class NatureScannerView {
           </div>
 
           <!-- Bottom Micro GPS & Hardware Barcode Telemetry -->
-          <div class="flex items-center justify-between text-on-surface-variant font-label-sm text-label-sm pt-1 border-t border-outline-hairline/40 font-mono">
-            <button class="flex items-center gap-1 cursor-pointer hover:text-primary active:scale-95 transition-all text-left" id="gps-display-btn" title="Tap to view GPS position on Offline Map">
-              <span class="material-symbols-outlined text-[14px] text-secondary">explore</span>
-              <span id="gps-display-label">GPS LOCK · 19.0728° N, 72.8826° E</span>
+          <div class="flex items-center justify-between text-on-surface-variant text-[10px] pt-1 border-t border-outline-hairline/40 font-mono gap-1">
+            <button class="flex items-center gap-1 cursor-pointer hover:text-primary active:scale-95 transition-all text-left min-w-0 truncate" id="gps-display-btn" title="Tap to view GPS position on Offline Map">
+              <span class="material-symbols-outlined text-[13px] text-secondary shrink-0">explore</span>
+              <span id="gps-display-label" class="truncate">GPS LOCK · 19.0728° N, 72.8826° E</span>
             </button>
-            <span class="text-secondary font-bold tracking-wider">OFFLINE VISION AI v3.8</span>
+            <span class="text-secondary font-bold tracking-wider shrink-0">VISION AI v3.8</span>
           </div>
         </div>
       </div>
@@ -377,6 +378,7 @@ export class NatureScannerView {
             img.src = dataUrl;
             img.classList.remove('hidden');
           }
+          this.container.querySelector('#reticle-target')?.classList.remove('hidden');
           this.isUsingLiveCamera = false;
 
           // Display active scanning state in HUD
@@ -664,6 +666,7 @@ export class NatureScannerView {
           video.classList.remove('hidden');
           standby?.classList.add('hidden');
           img?.classList.add('hidden');
+          this.container.querySelector('#reticle-target')?.classList.remove('hidden');
           this.isUsingLiveCamera = true;
           if (label) label.textContent = 'Live Lens Active';
           if (dot) {
@@ -693,8 +696,10 @@ export class NatureScannerView {
     if (img && img.src && !img.src.endsWith('/')) {
       img.classList.remove('hidden');
       standby?.classList.add('hidden');
+      this.container.querySelector('#reticle-target')?.classList.remove('hidden');
     } else {
       standby?.classList.remove('hidden');
+      this.container.querySelector('#reticle-target')?.classList.add('hidden');
     }
     this.isUsingLiveCamera = false;
     if (label) label.textContent = 'Local Vision AI • Offline';

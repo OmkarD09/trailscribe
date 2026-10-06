@@ -10,7 +10,8 @@
     "test": "node --experimental-strip-types tests/backend-validation.test.ts && node --experimental-strip-types tests/swarm/simulate-run.ts && node --experimental-strip-types tests/test-wildlife-vision-suite.ts",
     "test:unit": "node --experimental-strip-types tests/backend-validation.test.ts",
     "test:swarm": "node --experimental-strip-types tests/swarm/simulate-run.ts",
-    "test:vision": "node --experimental-strip-types tests/test-wildlife-vision-suite.ts"
+    "test:vision": "node --experimental-strip-types tests/test-wildlife-vision-suite.ts",
+    "mobile": "node scripts/mobile-connect.js"
   },
   "devDependencies": {
     "@types/leaflet": "^1.9.22",

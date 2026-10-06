@@ -95,17 +95,17 @@ export default {
         "headline-lg": ["Newsreader", "serif"]
       },
       fontSize: {
-        "body-lg": ["16px", { lineHeight: "24px", letterSpacing: "0em", fontWeight: "400" }],
-        "label-md": ["12px", { lineHeight: "16px", letterSpacing: "0.04em", fontWeight: "600" }],
-        "display-lg-mobile": ["32px", { lineHeight: "38px", letterSpacing: "-0.015em", fontWeight: "500" }],
-        "label-sm": ["11px", { lineHeight: "14px", letterSpacing: "0.06em", fontWeight: "700" }],
-        "body-md": ["15px", { lineHeight: "22px", letterSpacing: "0em", fontWeight: "400" }],
-        "headline-md": ["22px", { lineHeight: "28px", letterSpacing: "0em", fontWeight: "500" }],
-        "latin-name": ["16px", { lineHeight: "22px", letterSpacing: "0em", fontWeight: "400" }],
-        "display-lg": ["40px", { lineHeight: "46px", letterSpacing: "-0.02em", fontWeight: "500" }],
-        "body-sm": ["13px", { lineHeight: "18px", letterSpacing: "0.005em", fontWeight: "400" }],
-        "title-md": ["17px", { lineHeight: "24px", letterSpacing: "-0.005em", fontWeight: "600" }],
-        "headline-lg": ["28px", { lineHeight: "34px", letterSpacing: "-0.01em", fontWeight: "500" }]
+        "body-lg": ["15px", { lineHeight: "22px", letterSpacing: "0em", fontWeight: "400" }],
+        "label-md": ["11px", { lineHeight: "15px", letterSpacing: "0.03em", fontWeight: "600" }],
+        "display-lg-mobile": ["22px", { lineHeight: "28px", letterSpacing: "-0.015em", fontWeight: "600" }],
+        "label-sm": ["10px", { lineHeight: "13px", letterSpacing: "0.05em", fontWeight: "700" }],
+        "body-md": ["14px", { lineHeight: "20px", letterSpacing: "0em", fontWeight: "400" }],
+        "headline-md": ["17px", { lineHeight: "22px", letterSpacing: "0em", fontWeight: "600" }],
+        "latin-name": ["13px", { lineHeight: "17px", letterSpacing: "0em", fontWeight: "400" }],
+        "display-lg": ["28px", { lineHeight: "34px", letterSpacing: "-0.02em", fontWeight: "600" }],
+        "body-sm": ["12px", { lineHeight: "16px", letterSpacing: "0.005em", fontWeight: "400" }],
+        "title-md": ["15px", { lineHeight: "20px", letterSpacing: "-0.005em", fontWeight: "600" }],
+        "headline-lg": ["20px", { lineHeight: "26px", letterSpacing: "-0.01em", fontWeight: "600" }]
       }
     }
   },

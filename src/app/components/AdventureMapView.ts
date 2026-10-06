@@ -104,30 +104,30 @@ export class AdventureMapView {
           <div id="leaflet-map-canvas" class="w-full h-[520px] min-h-[520px]" style="width: 100%; height: 520px; min-height: 520px; position: relative;"></div>
 
           <!-- Floating Top Trip Strip Card: Live Expedition Telemetry (Clickable to Adventure) -->
-          <div class="absolute top-4 inset-x-margin z-[1000] cursor-pointer" id="trip-strip-card" title="Open Active Adventure Mode">
-            <div class="w-full bg-surface-card/95 backdrop-blur-md rounded-xl p-space-md shadow-lg flex flex-col gap-space-xs border border-outline-hairline/60 hover:border-secondary active:scale-[0.99] transition-all">
+          <div class="absolute top-3 inset-x-margin z-[1000] cursor-pointer" id="trip-strip-card" title="Open Active Adventure Mode">
+            <div class="w-full bg-surface-card/95 backdrop-blur-md rounded-xl p-2.5 shadow-lg flex flex-col gap-1 border border-outline-hairline/60 hover:border-secondary active:scale-[0.99] transition-all">
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-1.5">
-                  <span class="material-symbols-outlined text-[16px] text-on-tertiary-container" style="font-variation-settings: 'FILL' 1;">near_me</span>
-                  <span class="font-label-sm text-label-sm tracking-wider uppercase text-on-surface-variant font-bold">Your Adventure</span>
+                  <span class="material-symbols-outlined text-[15px] text-on-tertiary-container" style="font-variation-settings: 'FILL' 1;">near_me</span>
+                  <span class="text-[10px] tracking-wider uppercase text-on-surface-variant font-bold">Your Adventure</span>
                 </div>
                 <div class="flex items-center gap-1">
-                  <span class="px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-semibold">Active Track</span>
-                  <span class="material-symbols-outlined text-[15px] text-secondary">arrow_forward</span>
+                  <span class="px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container text-[10px] font-semibold">Active Track</span>
+                  <span class="material-symbols-outlined text-[14px] text-secondary">arrow_forward</span>
                 </div>
               </div>
-              <div class="grid grid-cols-3 divide-x-0 pt-1">
+              <div class="grid grid-cols-3 divide-x-0 pt-0.5">
                 <div class="flex flex-col">
-                  <span class="font-headline-md text-headline-md text-primary leading-tight font-serif">${distanceKm}<span class="font-label-md text-label-md ml-1 text-on-surface-variant font-normal">KM</span></span>
-                  <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Distance</span>
+                  <span class="text-[16px] font-bold text-primary leading-tight font-serif">${distanceKm}<span class="text-[10px] ml-0.5 text-on-surface-variant font-normal">KM</span></span>
+                  <span class="text-[9.5px] text-on-surface-variant uppercase tracking-wider">Distance</span>
                 </div>
-                <div class="flex flex-col pl-3">
-                  <span class="font-headline-md text-headline-md text-primary leading-tight font-serif">${elapsedMinutes}<span class="font-label-md text-label-md ml-1 text-on-surface-variant font-normal">MIN</span></span>
-                  <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Elapsed</span>
+                <div class="flex flex-col pl-2.5">
+                  <span class="text-[16px] font-bold text-primary leading-tight font-serif">${elapsedMinutes}<span class="text-[10px] ml-0.5 text-on-surface-variant font-normal">MIN</span></span>
+                  <span class="text-[9.5px] text-on-surface-variant uppercase tracking-wider">Elapsed</span>
                 </div>
-                <div class="flex flex-col pl-3">
-                  <span class="font-headline-md text-headline-md text-primary leading-tight font-serif">${discoveriesCount}<span class="font-label-md text-label-md ml-1 text-on-surface-variant font-normal">LOGS</span></span>
-                  <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Discoveries</span>
+                <div class="flex flex-col pl-2.5">
+                  <span class="text-[16px] font-bold text-primary leading-tight font-serif">${discoveriesCount}<span class="text-[10px] ml-0.5 text-on-surface-variant font-normal">LOGS</span></span>
+                  <span class="text-[9.5px] text-on-surface-variant uppercase tracking-wider">Discoveries</span>
                 </div>
               </div>
             </div>

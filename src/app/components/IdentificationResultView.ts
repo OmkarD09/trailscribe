@@ -78,38 +78,38 @@ export class IdentificationResultView {
         </section>
 
         <!-- Specimen Identity Header -->
-        <section class="px-margin pt-space-md">
-          <div class="flex items-center justify-between gap-space-sm mb-1.5">
-            <span class="font-label-sm text-label-sm uppercase tracking-wider text-amber-on-container font-bold">
-              SPECIMEN RECORDED • LOCAL ON-DEVICE MODEL
+        <section class="px-margin pt-3">
+          <div class="flex items-center justify-between gap-2 mb-1">
+            <span class="text-[9.5px] uppercase tracking-wider text-amber-on-container font-bold">
+              SPECIMEN RECORDED • LOCAL VISION MODEL
             </span>
-            <span class="font-label-sm text-label-sm text-secondary font-medium tracking-tight font-mono">ID #8492-IN</span>
+            <span class="text-[10px] text-secondary font-medium tracking-tight font-mono">ID #8492-IN</span>
           </div>
-          <h2 class="font-display-lg-mobile text-display-lg-mobile text-primary tracking-tight leading-tight font-serif">
+          <h2 class="text-xl md:text-2xl font-bold text-primary tracking-tight leading-tight font-serif">
             ${commonName}
           </h2>
-          <p class="font-latin-name text-latin-name italic text-secondary pt-0.5 pb-space-sm font-serif">
+          <p class="text-xs italic text-secondary pt-0.5 pb-2 font-serif">
             ${scientificName}
           </p>
           <!-- Taxonomy and Conservation Status Chips -->
-          <div class="flex flex-wrap gap-2 pt-1 pb-space-sm">
-            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-sage-fill text-primary font-label-md text-label-md">
-              <span class="material-symbols-outlined text-[14px]">pets</span>
+          <div class="flex flex-wrap gap-1.5 pt-0.5 pb-2">
+            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-sage-fill text-primary text-[11px] font-semibold">
+              <span class="material-symbols-outlined text-[13px]">pets</span>
               Fauna
             </span>
-            <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-sage-fill text-primary font-label-md text-label-md">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-sage-fill text-primary text-[11px] font-semibold">
               Order Rodentia
             </span>
-            <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-sage-fill text-primary font-label-md text-label-md">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-sage-fill text-primary text-[11px] font-semibold">
               Native
             </span>
-            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-sage-fill text-primary font-label-md text-label-md">
-              <span class="material-symbols-outlined text-[14px] text-secondary">verified_user</span>
+            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-sage-fill text-primary text-[11px] font-semibold">
+              <span class="material-symbols-outlined text-[13px] text-secondary">verified_user</span>
               Least Concern
             </span>
           </div>
           <!-- Brief Scientific Profile -->
-          <p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+          <p class="text-xs text-on-surface-variant leading-relaxed">
             Common around urban parks and gardens. Known for three bold dorsal stripes and a soft, bushy tail.
           </p>
         </section>

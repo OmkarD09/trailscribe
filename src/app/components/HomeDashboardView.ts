@@ -47,43 +47,43 @@ export class HomeDashboardView {
         </section>
 
         <!-- Hero Adventure Card -->
-        <section class="relative overflow-hidden rounded-xl bg-surface-card shadow-[0_1px_3px_rgba(21,26,23,0.05),0_4px_12px_rgba(21,26,23,0.03)] p-space-md border border-outline-hairline/60">
+        <section class="relative overflow-hidden rounded-xl bg-surface-card shadow-[0_1px_3px_rgba(21,26,23,0.05),0_4px_12px_rgba(21,26,23,0.03)] p-3.5 border border-outline-hairline/60">
           <!-- Tactile Corner Notching Badge -->
           <div class="flex items-center justify-between gap-2">
             <span class="font-label-sm text-label-sm uppercase tracking-wider text-amber-on-container font-bold px-2 py-0.5 rounded bg-amber-container">
               Today's Adventure
             </span>
-            <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-card-subtle text-on-surface-variant">
-              <span class="material-symbols-outlined text-[15px] text-secondary">wb_sunny</span>
+            <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-surface-card-subtle text-on-surface-variant">
+              <span class="material-symbols-outlined text-[14px] text-secondary">wb_sunny</span>
               <span class="font-label-sm text-label-sm font-bold tracking-tight">42 MIN OUTSIDE</span>
             </div>
           </div>
           <!-- Adventure Mission Statement -->
-          <div class="mt-space-md">
+          <div class="mt-2.5">
             <h2 class="font-display-lg-mobile text-display-lg-mobile text-primary leading-tight font-serif">
               Field Quest #18
             </h2>
-            <p class="font-body-md text-body-md text-on-surface-variant mt-1.5 leading-snug">
+            <p class="font-body-md text-body-md text-on-surface-variant mt-1 leading-snug">
               Discover 3 things you've never noticed before. Keep your eyes tuned to canopy fissures and bark crevices.
             </p>
           </div>
           <!-- Mini Field Progress Hint -->
-          <div class="mt-space-md p-space-sm rounded-lg bg-surface-card-subtle flex items-center justify-between">
+          <div class="mt-2.5 p-2 rounded-lg bg-surface-card-subtle flex items-center justify-between">
             <div class="flex items-center gap-2">
-              <div class="w-2.5 h-2.5 rounded-full bg-secondary"></div>
+              <div class="w-2 h-2 rounded-full bg-secondary"></div>
               <span class="font-body-sm text-body-sm text-on-surface font-medium">Quest Status</span>
             </div>
             <span class="font-label-md text-label-md text-secondary font-bold">1 / 3 Recorded</span>
           </div>
           <!-- Primary Action Button Cluster -->
-          <div class="mt-space-md grid grid-cols-2 gap-space-sm">
-            <button class="h-12 rounded-lg bg-surface-card text-primary font-title-md text-title-md flex items-center justify-center gap-2 border border-outline-hairline/60 active:scale-[0.98] transition-all cursor-pointer shadow-sm hover:border-secondary" id="explore-map-btn" title="Open Offline Adventure Map">
-              <span class="material-symbols-outlined text-[20px] text-secondary">explore</span>
-              <span>FIELD MAP</span>
+          <div class="mt-3 grid grid-cols-2 gap-2">
+            <button class="h-10 rounded-lg bg-surface-card text-primary text-xs font-semibold tracking-wider flex items-center justify-center gap-1.5 border border-outline-hairline/60 active:scale-[0.98] transition-all cursor-pointer shadow-sm hover:border-secondary uppercase" id="explore-map-btn" title="Open Offline Adventure Map">
+              <span class="material-symbols-outlined text-[18px] text-secondary">explore</span>
+              <span>Field Map</span>
             </button>
-            <button class="h-12 rounded-lg bg-primary-container text-vellum-bg font-title-md text-title-md flex items-center justify-center gap-2 shadow-[0_4px_16px_rgba(21,26,23,0.10)] active:bg-secondary active:scale-[0.98] transition-all cursor-pointer" id="start-adventure-btn">
-              <span>START QUEST</span>
-              <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+            <button class="h-10 rounded-lg bg-primary-container text-vellum-bg text-xs font-semibold tracking-wider flex items-center justify-center gap-1.5 shadow-[0_4px_16px_rgba(21,26,23,0.10)] active:bg-secondary active:scale-[0.98] transition-all cursor-pointer uppercase" id="start-adventure-btn">
+              <span>Start Quest</span>
+              <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
             </button>
           </div>
         </section>
@@ -204,23 +204,23 @@ export class HomeDashboardView {
               const timeLoc = obs.readableDate;
               const groupText = obs.kingdomOrGroup === 'Aves' ? 'Bird · Native' : obs.kingdomOrGroup === 'Plantae' ? 'Plant · Flora' : obs.kingdomOrGroup === 'Insecta' ? 'Insect · Lepidoptera' : 'Fauna · Native';
               return `
-                <article class="recent-specimen-card flex items-center gap-space-md p-space-sm rounded-xl bg-surface-card shadow-[0_1px_3px_rgba(21,26,23,0.05),0_4px_12px_rgba(21,26,23,0.03)] active:bg-surface-card-subtle transition-colors cursor-pointer border border-outline-hairline/60" data-specimen="${obs.id}">
-                  <div class="relative w-20 h-20 rounded-lg overflow-hidden shrink-0 bg-surface-container">
+                <article class="recent-specimen-card flex items-center gap-3 p-2.5 rounded-xl bg-surface-card shadow-[0_1px_3px_rgba(21,26,23,0.05),0_4px_12px_rgba(21,26,23,0.03)] active:bg-surface-card-subtle transition-colors cursor-pointer border border-outline-hairline/60" data-specimen="${obs.id}">
+                  <div class="relative w-16 h-16 rounded-lg overflow-hidden shrink-0 bg-surface-container">
                     <img class="w-full h-full object-cover" alt="${obs.commonName || 'Specimen'}" src="${photoUrl}"/>
-                    <div class="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-obsidian-scrim text-vellum-bg text-[10px] font-label-sm font-bold">
+                    <div class="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-obsidian-scrim text-vellum-bg text-[9px] font-bold">
                       ${confPct}%
                     </div>
                   </div>
                   <div class="flex flex-col min-w-0 flex-1 py-0.5">
                     <div class="flex items-center justify-between gap-1">
-                      <span class="font-label-sm text-label-sm text-on-surface-variant truncate">${timeLoc}</span>
-                      <span class="material-symbols-outlined text-[16px] text-secondary">chevron_right</span>
+                      <span class="text-[10px] text-on-surface-variant truncate">${timeLoc}</span>
+                      <span class="material-symbols-outlined text-[15px] text-secondary">chevron_right</span>
                     </div>
-                    <h4 class="font-title-md text-title-md text-primary font-bold truncate mt-0.5">${obs.commonName || 'Natural Specimen'}</h4>
-                    <span class="font-latin-name text-latin-name italic text-secondary truncate">${obs.scientificName || 'Unknown Taxa'}</span>
-                    <div class="flex items-center gap-1.5 mt-2">
-                      <span class="px-2 py-0.5 rounded bg-sage-fill text-primary font-label-md text-label-md">${groupText}</span>
-                      <span class="px-2 py-0.5 rounded bg-surface-card-subtle text-on-surface-variant font-label-md text-label-md">Cataloged</span>
+                    <h4 class="text-[14px] text-primary font-bold truncate leading-tight mt-0.5">${obs.commonName || 'Natural Specimen'}</h4>
+                    <span class="text-[11px] italic text-secondary truncate font-serif leading-tight">${obs.scientificName || 'Unknown Taxa'}</span>
+                    <div class="flex items-center gap-1.5 mt-1.5">
+                      <span class="px-2 py-0.5 rounded bg-sage-fill text-primary text-[10px] font-semibold">${groupText}</span>
+                      <span class="px-2 py-0.5 rounded bg-surface-card-subtle text-on-surface-variant text-[10px] font-medium">Cataloged</span>
                     </div>
                   </div>
                 </article>

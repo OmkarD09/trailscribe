@@ -162,16 +162,16 @@ export class FieldJournalView {
                 </div>
                 <span class="font-label-sm text-label-sm text-secondary-fixed-dim tracking-wider font-mono">Acoustic ID ${seqNumber}</span>
               </div>
-              <div class="p-3 flex flex-col">
-                <span class="font-label-sm text-label-sm text-tertiary-fixed-dim font-bold tracking-wider uppercase">${seqNumber} · ${dateStr.toUpperCase()}</span>
-                <h3 class="font-headline-md text-headline-md text-primary leading-tight mt-0.5 font-serif truncate">${obs.commonName || 'Spotted Owlet'}</h3>
-                <p class="font-latin-name text-latin-name italic text-secondary leading-snug truncate">${obs.scientificName || 'Athene brama'}</p>
-                <div class="mt-2.5 pt-2 flex items-center justify-between text-on-surface-variant bg-surface-card-subtle px-2 py-1 rounded-lg">
-                  <span class="font-body-sm text-body-sm truncate flex items-center gap-1">
-                    <span class="material-symbols-outlined text-[13px] text-secondary">location_on</span>
+              <div class="p-2.5 flex flex-col">
+                <span class="text-[9.5px] text-tertiary-fixed-dim font-bold tracking-wider uppercase">${seqNumber} · ${dateStr.toUpperCase()}</span>
+                <h3 class="text-[13.5px] font-bold text-primary leading-tight mt-0.5 font-serif truncate">${obs.commonName || 'Spotted Owlet'}</h3>
+                <p class="text-[11px] italic text-secondary leading-tight truncate font-serif">${obs.scientificName || 'Athene brama'}</p>
+                <div class="mt-2 pt-1.5 flex items-center justify-between text-on-surface-variant bg-surface-card-subtle px-2 py-0.5 rounded-lg text-[10px]">
+                  <span class="truncate flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[12px] text-secondary">location_on</span>
                     ${locationShort}
                   </span>
-                  <span class="material-symbols-outlined text-[15px] text-secondary">bookmark_border</span>
+                  <span class="material-symbols-outlined text-[13px] text-secondary">bookmark_border</span>
                 </div>
               </div>
             </article>
@@ -188,24 +188,24 @@ export class FieldJournalView {
           <article class="specimen-masonry-card flex flex-col bg-surface-card rounded-xl shadow-sm overflow-hidden transition-all duration-200 hover:-translate-y-0.5 cursor-pointer border border-outline-hairline/60" data-type="${catType}" data-id="${obs.id}">
             <div class="relative w-full ${aspectClass} bg-surface-container overflow-hidden">
               <img class="w-full h-full object-cover" alt="${obs.commonName || 'Specimen'}" src="${photoUrl}"/>
-              <div class="absolute top-2 right-2 bg-obsidian-scrim px-2 py-0.5 rounded-full backdrop-blur-xs flex items-center gap-1">
+              <div class="absolute top-2 right-2 bg-obsidian-scrim px-1.5 py-0.5 rounded-full backdrop-blur-xs flex items-center gap-1">
                 <span class="w-1.5 h-1.5 rounded-full bg-tertiary-fixed-dim"></span>
-                <span class="font-label-sm text-label-sm text-vellum-bg font-bold">${confPct}%</span>
+                <span class="text-[9px] text-vellum-bg font-bold">${confPct}%</span>
               </div>
-              <div class="absolute bottom-2 left-2 bg-obsidian-scrim/80 px-2 py-0.5 rounded-md">
-                <span class="font-label-sm text-label-sm text-vellum-bg uppercase tracking-widest font-semibold">${groupBadge}</span>
+              <div class="absolute bottom-2 left-2 bg-obsidian-scrim/80 px-1.5 py-0.5 rounded-md">
+                <span class="text-[9px] text-vellum-bg uppercase tracking-widest font-semibold">${groupBadge}</span>
               </div>
             </div>
-            <div class="p-3 flex flex-col">
-              <span class="font-label-sm text-label-sm text-tertiary-fixed-dim font-bold tracking-wider uppercase">${seqNumber} · ${dateStr.toUpperCase()}</span>
-              <h3 class="font-headline-md text-headline-md text-primary leading-tight mt-0.5 font-serif truncate">${obs.commonName || 'Natural Specimen'}</h3>
-              <p class="font-latin-name text-latin-name italic text-secondary leading-snug truncate">${obs.scientificName || 'Unknown Taxa'}</p>
-              <div class="mt-2.5 pt-2 flex items-center justify-between text-on-surface-variant bg-surface-card-subtle px-2 py-1 rounded-lg">
-                <span class="font-body-sm text-body-sm truncate flex items-center gap-1">
-                  <span class="material-symbols-outlined text-[13px] text-secondary">location_on</span>
+            <div class="p-2.5 flex flex-col">
+              <span class="text-[9.5px] text-tertiary-fixed-dim font-bold tracking-wider uppercase">${seqNumber} · ${dateStr.toUpperCase()}</span>
+              <h3 class="text-[13.5px] font-bold text-primary leading-tight mt-0.5 font-serif truncate">${obs.commonName || 'Natural Specimen'}</h3>
+              <p class="text-[11px] italic text-secondary leading-tight truncate font-serif">${obs.scientificName || 'Unknown Taxa'}</p>
+              <div class="mt-2 pt-1.5 flex items-center justify-between text-on-surface-variant bg-surface-card-subtle px-2 py-0.5 rounded-lg text-[10px]">
+                <span class="truncate flex items-center gap-1">
+                  <span class="material-symbols-outlined text-[12px] text-secondary">location_on</span>
                   ${locationShort}
                 </span>
-                <span class="material-symbols-outlined text-[15px] text-secondary">bookmark_border</span>
+                <span class="material-symbols-outlined text-[13px] text-secondary">bookmark_border</span>
               </div>
             </div>
           </article>
