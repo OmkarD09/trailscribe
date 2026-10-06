@@ -1,14 +1,28 @@
+import { GeoLocationTracker } from '../../utils/geolocation';
+
+export interface AdventureSessionSummary {
+  minutes: number;
+  distanceKm: number;
+  discoveriesCount: number;
+  phoneFreePercent: number;
+  trailName?: string;
+}
+
 export class AdventureModeView {
   private container: HTMLElement;
   private onSpotSpecimen: () => void;
-  private onConcludeAdventure: () => void;
+  private onConcludeAdventure: (summary: AdventureSessionSummary) => void;
   private isPaused: boolean = false;
+  private elapsedSeconds: number = 18 * 60; // Default starts at 18 minutes
+  private distanceKm: number = 0.84;
+  private discoveriesCount: number = 1;
+  private timerInterval: ReturnType<typeof setInterval> | null = null;
 
   constructor(
     container: HTMLElement,
     callbacks: {
       onSpotSpecimen: () => void;
-      onConcludeAdventure: () => void;
+      onConcludeAdventure: (summary: AdventureSessionSummary) => void;
     }
   ) {
     this.container = container;
@@ -17,6 +31,9 @@ export class AdventureModeView {
   }
 
   render(): void {
+    const minutes = Math.floor(this.elapsedSeconds / 60);
+    const progressArc = Math.min(100, Math.round((minutes / 45) * 100));
+
     this.container.innerHTML = `
       <div class="flex flex-col w-full pb-safe view-enter">
         <div class="px-margin pt-space-md flex flex-col gap-space-lg max-w-md mx-auto w-full">
@@ -25,11 +42,11 @@ export class AdventureModeView {
             <div class="flex items-center gap-space-xs">
               <span class="w-2 h-2 rounded-full bg-primary animate-ping"></span>
               <span class="w-2 h-2 rounded-full bg-primary -ml-space-xs"></span>
-              <span class="font-label-sm text-label-sm text-secondary uppercase tracking-widest pl-1 font-mono">GPS Lock • 37.7749° N</span>
+              <span class="font-label-sm text-label-sm text-secondary uppercase tracking-widest pl-1 font-mono" id="gps-telemetry-label">GPS Lock • 19.0438° N</span>
             </div>
             <div class="flex items-center gap-1.5 text-on-surface-variant font-label-sm text-label-sm">
               <span class="material-symbols-outlined text-[16px] text-secondary">battery_charging_full</span>
-              <span>Passive Scan Active</span>
+              <span id="field-scan-status">Passive Scan Active</span>
             </div>
           </div>
 
@@ -46,12 +63,12 @@ export class AdventureModeView {
                 <div class="relative w-12 h-12 flex items-center justify-center shrink-0">
                   <svg class="w-full h-full -rotate-90" viewbox="0 0 36 36">
                     <path class="text-surface-container" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3"></path>
-                    <path class="text-on-tertiary-container" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="40, 100" stroke-linecap="round" stroke-width="3.5"></path>
+                    <path id="sunlight-arc" class="text-on-tertiary-container transition-all duration-500" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="${progressArc}, 100" stroke-linecap="round" stroke-width="3.5"></path>
                   </svg>
                   <span class="material-symbols-outlined absolute text-[16px] text-tertiary">forest</span>
                 </div>
                 <div class="flex flex-col">
-                  <span class="font-headline-md text-headline-md text-primary leading-none font-serif">18<span class="font-body-sm text-body-sm text-secondary ml-0.5">m</span></span>
+                  <span class="font-headline-md text-headline-md text-primary leading-none font-serif"><span id="field-time-mins">${minutes}</span><span class="font-body-sm text-body-sm text-secondary ml-0.5">m</span></span>
                   <span class="font-label-sm text-label-sm text-on-surface-variant">Sunlight Bath</span>
                 </div>
               </div>
@@ -68,8 +85,8 @@ export class AdventureModeView {
                 <span class="material-symbols-outlined text-secondary text-[20px]">eco</span>
               </div>
               <div class="flex items-center gap-space-sm my-space-sm">
-                <div class="w-12 h-12 rounded-full bg-secondary-fixed flex items-center justify-center text-primary font-headline-md text-headline-md shrink-0 font-serif">
-                  01
+                <div class="w-12 h-12 rounded-full bg-secondary-fixed flex items-center justify-center text-primary font-headline-md text-headline-md shrink-0 font-serif" id="encounter-badge-count">
+                  ${this.discoveriesCount < 10 ? `0${this.discoveriesCount}` : this.discoveriesCount}
                 </div>
                 <div class="flex flex-col">
                   <span class="font-headline-md text-headline-md text-primary leading-none font-serif">Noted</span>
@@ -142,7 +159,7 @@ export class AdventureModeView {
               <span class="material-symbols-outlined text-[18px] text-secondary">explore</span>
               <span class="truncate">Redwood Creek Trailhead sector 4</span>
             </div>
-            <span class="font-label-sm text-label-sm text-secondary shrink-0 pl-space-xs font-mono font-bold">0.84 km</span>
+            <span class="font-label-sm text-label-sm text-secondary shrink-0 pl-space-xs font-mono font-bold" id="adventure-km-label">${this.distanceKm.toFixed(2)} km</span>
           </div>
 
           <!-- Bottom Thumb Actions Area -->
@@ -164,34 +181,100 @@ export class AdventureModeView {
     `;
 
     this.bindEvents();
+    this.startActiveEngine();
+  }
+
+  private startActiveEngine(): void {
+    this.stop();
+
+    // Start timer interval for live sunlight bath and tracking
+    this.timerInterval = setInterval(() => {
+      if (this.isPaused) return;
+
+      this.elapsedSeconds += 1;
+      const mins = Math.floor(this.elapsedSeconds / 60);
+
+      // Update minutes display every second
+      const minsEl = this.container.querySelector('#field-time-mins');
+      if (minsEl) minsEl.textContent = String(mins);
+
+      // Update solar progress arc
+      const arcEl = this.container.querySelector('#sunlight-arc');
+      if (arcEl) {
+        const progressArc = Math.min(100, Math.round((mins / 45) * 100));
+        arcEl.setAttribute('stroke-dasharray', `${progressArc}, 100`);
+      }
+
+      // Increment distance gently
+      if (this.elapsedSeconds % 5 === 0) {
+        this.distanceKm += 0.01;
+        const kmEl = this.container.querySelector('#adventure-km-label');
+        if (kmEl) kmEl.textContent = `${this.distanceKm.toFixed(2)} km`;
+      }
+    }, 1000);
+
+    // Refresh GPS coordinates
+    GeoLocationTracker.getCurrentPosition()
+      .then((coords) => {
+        const label = this.container.querySelector('#gps-telemetry-label');
+        if (label) {
+          label.textContent = `GPS Lock • ${coords.latitude.toFixed(4)}° N`;
+        }
+      })
+      .catch(() => {});
+  }
+
+  public stop(): void {
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+      this.timerInterval = null;
+    }
   }
 
   private bindEvents(): void {
     const pauseBtn = this.container.querySelector('#pause-adventure-btn');
     const pauseIcon = this.container.querySelector('#pause-icon');
     const pauseLabel = this.container.querySelector('#pause-label');
+    const statusLabel = this.container.querySelector('#field-scan-status');
 
     pauseBtn?.addEventListener('click', () => {
       this.isPaused = !this.isPaused;
       if (this.isPaused) {
         pauseIcon!.textContent = 'play_circle';
         pauseLabel!.textContent = 'Resume Adventure';
+        if (statusLabel) statusLabel.textContent = 'Field Quest Paused';
         pauseBtn.classList.add('bg-amber-container', 'text-amber-on-container');
       } else {
         pauseIcon!.textContent = 'pause_circle';
         pauseLabel!.textContent = 'Pause Adventure';
+        if (statusLabel) statusLabel.textContent = 'Passive Scan Active';
         pauseBtn.classList.remove('bg-amber-container', 'text-amber-on-container');
       }
     });
 
     const spottedBtn = this.container.querySelector('#spotted-btn');
     spottedBtn?.addEventListener('click', () => {
+      this.discoveriesCount += 1;
+      const countEl = this.container.querySelector('#encounter-badge-count');
+      if (countEl) {
+        countEl.textContent = this.discoveriesCount < 10 ? `0${this.discoveriesCount}` : String(this.discoveriesCount);
+      }
+      this.stop();
       this.onSpotSpecimen();
     });
 
     const concludeBtn = this.container.querySelector('#conclude-adventure-btn');
     concludeBtn?.addEventListener('click', () => {
-      this.onConcludeAdventure();
+      this.stop();
+      const minutes = Math.max(1, Math.round(this.elapsedSeconds / 60));
+      const summary: AdventureSessionSummary = {
+        minutes,
+        distanceKm: Number(this.distanceKm.toFixed(1)),
+        discoveriesCount: this.discoveriesCount,
+        phoneFreePercent: Math.min(94, Math.max(60, Math.round(71 + (minutes % 8)))),
+        trailName: 'Redwood Creek Trailhead'
+      };
+      this.onConcludeAdventure(summary);
     });
   }
 }

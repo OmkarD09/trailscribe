@@ -1,4 +1,5 @@
 import { db } from '../../storage/db';
+import { FieldEntityParser } from '../../runner/parser';
 
 export class IdentificationResultView {
   private container: HTMLElement;
@@ -12,6 +13,10 @@ export class IdentificationResultView {
     locationText?: string;
     coordsText?: string;
     timeText?: string;
+    fieldNotes?: string;
+    habitat?: string;
+    kingdomOrGroup?: string;
+    abundanceCount?: number;
   };
 
   constructor(
@@ -28,6 +33,10 @@ export class IdentificationResultView {
       locationText?: string;
       coordsText?: string;
       timeText?: string;
+      fieldNotes?: string;
+      habitat?: string;
+      kingdomOrGroup?: string;
+      abundanceCount?: number;
     }
   ) {
     this.container = container;
@@ -151,8 +160,9 @@ export class IdentificationResultView {
                 </span>
                 <span class="material-symbols-outlined text-[18px] transition-transform" id="note-chevron">expand_more</span>
               </button>
-              <div class="hidden pt-2" id="note-input-container">
-                <textarea class="w-full bg-surface-container text-on-surface placeholder:text-outline font-body-sm text-body-sm rounded-lg p-3 outline-none resize-none border border-outline-hairline/80" placeholder="Observed feeding on wild figs near damp rock cleft..." rows="2"></textarea>
+              <div class="hidden pt-2 flex flex-col gap-1.5" id="note-input-container">
+                <textarea id="field-note-input" class="w-full bg-surface-container text-on-surface placeholder:text-outline font-body-sm text-body-sm rounded-lg p-3 outline-none resize-none border border-outline-hairline/80" placeholder="Observed feeding on wild figs near damp rock cleft..." rows="2">${this.specimenData?.fieldNotes || ''}</textarea>
+                <div id="note-entity-chips" class="flex flex-wrap gap-1.5 empty:hidden"></div>
               </div>
             </div>
           </div>
@@ -200,6 +210,37 @@ export class IdentificationResultView {
     const noteToggle = this.container.querySelector('#add-note-toggle');
     const noteContainer = this.container.querySelector('#note-input-container');
     const noteChevron = this.container.querySelector('#note-chevron');
+    const noteInput = this.container.querySelector('#field-note-input') as HTMLTextAreaElement | null;
+    const chipsContainer = this.container.querySelector('#note-entity-chips');
+
+    const updateEntityChips = () => {
+      if (!noteInput || !chipsContainer) return;
+      const text = noteInput.value.trim();
+      if (!text) {
+        chipsContainer.innerHTML = '';
+        return;
+      }
+      const parsed = FieldEntityParser.parse(text);
+      const chips: string[] = [];
+      if (parsed.abundanceCount && parsed.abundanceCount > 1) {
+        chips.push(`<span class="px-2 py-0.5 rounded-full bg-secondary-container text-primary text-[11px] font-semibold">Count: ${parsed.abundanceCount}</span>`);
+      }
+      if (parsed.substrate) {
+        chips.push(`<span class="px-2 py-0.5 rounded-full bg-amber-container text-amber-on-container text-[11px] font-semibold">Substrate: ${parsed.substrate}</span>`);
+      }
+      if (parsed.habitat) {
+        chips.push(`<span class="px-2 py-0.5 rounded-full bg-sage-fill text-primary text-[11px] font-semibold">Habitat: ${parsed.habitat}</span>`);
+      }
+      if (parsed.speciesCandidates.length > 0 && parsed.speciesCandidates[0] !== this.specimenData?.commonName) {
+        chips.push(`<span class="px-2 py-0.5 rounded-full bg-surface-container-high text-primary text-[11px] font-semibold">Affinity: ${parsed.speciesCandidates[0]}</span>`);
+      }
+      chipsContainer.innerHTML = chips.join('');
+    };
+
+    if (noteInput) {
+      noteInput.addEventListener('input', updateEntityChips);
+      if (noteInput.value) updateEntityChips();
+    }
 
     if (noteToggle && noteContainer && noteChevron) {
       noteToggle.addEventListener('click', () => {
@@ -207,6 +248,7 @@ export class IdentificationResultView {
         if (isHidden) {
           noteContainer.classList.remove('hidden');
           noteChevron.classList.add('rotate-180');
+          noteInput?.focus();
         } else {
           noteContainer.classList.add('hidden');
           noteChevron.classList.remove('rotate-180');
@@ -229,7 +271,16 @@ export class IdentificationResultView {
 
         try {
           if (this.specimenData?.id) {
-            await db.updateObservation(this.specimenData.id, { synced: true });
+            const updates: Record<string, unknown> = { synced: true };
+            if (noteInput && noteInput.value.trim()) {
+              const text = noteInput.value.trim();
+              const parsed = FieldEntityParser.parse(text);
+              updates.fieldNotes = text;
+              if (parsed.abundanceCount) updates.abundanceCount = parsed.abundanceCount;
+              if (parsed.substrate) updates.substrate = parsed.substrate;
+              if (parsed.habitat) updates.habitat = parsed.habitat;
+            }
+            await db.updateObservation(this.specimenData.id, updates);
           }
         } catch (e) {
           console.warn('DB update notice:', e);

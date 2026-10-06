@@ -1,21 +1,40 @@
+import { db } from '../../storage/db';
+import type { AdventureSessionSummary } from './AdventureModeView';
+import type { FieldObservation } from '../../storage/types';
+
 export class AdventureCompleteView {
   private container: HTMLElement;
   private onViewJournal: () => void;
   private onStartAnother: () => void;
+  private sessionSummary?: AdventureSessionSummary;
+  private onSelectSpecimen?: (id: string) => void;
 
   constructor(
     container: HTMLElement,
     callbacks: {
       onViewJournal: () => void;
       onStartAnother: () => void;
-    }
+      onSelectSpecimen?: (id: string) => void;
+    },
+    sessionSummary?: AdventureSessionSummary
   ) {
     this.container = container;
     this.onViewJournal = callbacks.onViewJournal;
     this.onStartAnother = callbacks.onStartAnother;
+    this.onSelectSpecimen = callbacks.onSelectSpecimen;
+    this.sessionSummary = sessionSummary;
   }
 
-  render(): void {
+  async render(): Promise<void> {
+    const minutes = this.sessionSummary?.minutes ?? 38;
+    const distance = this.sessionSummary?.distanceKm ?? 2.7;
+    const discoveries = this.sessionSummary?.discoveriesCount ?? 5;
+    const phoneFreePercent = this.sessionSummary?.phoneFreePercent ?? 71;
+    const phoneFreeMinutes = Math.round(minutes * (phoneFreePercent / 100));
+
+    // Fetch recent observations from offline ledger
+    const recentObservations = await db.getRecentObservations(6);
+
     this.container.innerHTML = `
       <div class="flex flex-col w-full pb-safe view-enter">
         <div class="px-margin pt-space-md flex flex-col items-center text-center">
@@ -27,7 +46,7 @@ export class AdventureCompleteView {
             You touched grass.
           </h2>
           <p class="font-body-md text-body-md text-on-surface-variant max-w-[320px] leading-relaxed">
-            38 minutes outside. 27 minutes without looking at your phone.
+            ${minutes} minutes outside. ${phoneFreeMinutes} minutes without looking at your phone.
           </p>
           <div class="w-full mt-space-md bg-sage-fill/40 rounded-xl p-3 flex items-center justify-between shadow-sm border border-outline-hairline/60">
             <div class="flex items-center gap-2.5">
@@ -35,8 +54,8 @@ export class AdventureCompleteView {
                 🌱
               </div>
               <div class="text-left">
-                <span class="block font-title-md text-title-md text-primary leading-tight font-semibold">71% Phone-Free Presence</span>
-                <span class="block font-body-sm text-body-sm text-on-surface-variant">27 uninterrupted analog minutes</span>
+                <span class="block font-title-md text-title-md text-primary leading-tight font-semibold">${phoneFreePercent}% Phone-Free Presence</span>
+                <span class="block font-body-sm text-body-sm text-on-surface-variant">${phoneFreeMinutes} uninterrupted analog minutes</span>
               </div>
             </div>
             <span class="material-symbols-outlined text-secondary text-[22px]">verified</span>
@@ -45,15 +64,15 @@ export class AdventureCompleteView {
 
         <div class="px-margin mt-space-md grid grid-cols-3 gap-space-sm">
           <div class="bg-surface-card rounded-xl p-3.5 flex flex-col items-center justify-center text-center shadow-sm border border-outline-hairline/60">
-            <span class="font-headline-md text-headline-md text-primary font-medium font-serif">2.7</span>
+            <span class="font-headline-md text-headline-md text-primary font-medium font-serif">${distance}</span>
             <span class="font-label-sm text-label-sm text-on-surface-variant tracking-wider uppercase mt-0.5">Kilometers</span>
           </div>
           <div class="bg-surface-card rounded-xl p-3.5 flex flex-col items-center justify-center text-center shadow-sm border border-outline-hairline/60">
-            <span class="font-headline-md text-headline-md text-primary font-medium font-serif">38</span>
+            <span class="font-headline-md text-headline-md text-primary font-medium font-serif">${minutes}</span>
             <span class="font-label-sm text-label-sm text-on-surface-variant tracking-wider uppercase mt-0.5">Min Outside</span>
           </div>
           <div class="bg-surface-card rounded-xl p-3.5 flex flex-col items-center justify-center text-center shadow-sm border border-outline-hairline/60">
-            <span class="font-headline-md text-headline-md text-primary font-medium font-serif">5</span>
+            <span class="font-headline-md text-headline-md text-primary font-medium font-serif">${discoveries}</span>
             <span class="font-label-sm text-label-sm text-on-surface-variant tracking-wider uppercase mt-0.5">Discoveries</span>
           </div>
         </div>
@@ -95,70 +114,14 @@ export class AdventureCompleteView {
           <div class="px-margin flex items-center justify-between mb-space-sm">
             <div class="flex items-center gap-2">
               <h3 class="font-headline-md text-headline-md text-primary font-medium leading-none font-serif">You Found Today</h3>
-              <span class="font-label-sm text-label-sm bg-sage-fill text-primary px-2 py-0.5 rounded-full font-bold">5 Specimens</span>
+              <span class="font-label-sm text-label-sm bg-sage-fill text-primary px-2 py-0.5 rounded-full font-bold">
+                ${recentObservations.length > 0 ? recentObservations.length : discoveries} Specimens
+              </span>
             </div>
             <span class="font-label-sm text-label-sm text-on-surface-variant">Archived offline</span>
           </div>
-          <div class="flex gap-space-sm overflow-x-auto px-margin pb-1">
-            <div class="bg-surface-card rounded-xl p-3 shrink-0 w-44 shadow-sm flex flex-col border border-outline-hairline/60">
-              <div class="relative w-full h-28 rounded-lg overflow-hidden mb-2 bg-surface-card-subtle">
-                <img class="w-full h-full object-cover" alt="European Robin" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDhdCi667_a99KfoIbkbT3KRL-GnFlfB-fpRZyjH2ELqaboRPsHB8uCVJHeVx2hJ7S5Dx6x7Ox3-1kPWdqL9neVXX8Ee3jSZijbQDNTlwImBN4IjRB6drAl9UMEilKVuMstTKdOmnotXiOzEF8CVa6u87W3xA-stJqK0fSO0qNAD4WXo5Vp9o-gSkHsMMRkzmb0FQaiRN7LrTliMw2KgHhwxsFgXFeQet1_OZ6gtPOWMAHwux3MCva-"/>
-                <div class="absolute top-1.5 right-1.5 bg-obsidian-scrim text-vellum-bg text-xs px-1.5 py-0.5 rounded">
-                  🐦 Bird
-                </div>
-              </div>
-              <span class="font-title-md text-title-md text-primary leading-tight truncate font-serif">European Robin</span>
-              <span class="font-latin-name text-latin-name italic text-secondary leading-tight mt-0.5 truncate font-serif">Erithacus rubecula</span>
-              <span class="font-label-sm text-label-sm text-on-surface-variant mt-2">10:14 AM · Ridge Trail</span>
-            </div>
-
-            <div class="bg-surface-card rounded-xl p-3 shrink-0 w-44 shadow-sm flex flex-col border border-outline-hairline/60">
-              <div class="relative w-full h-28 rounded-lg overflow-hidden mb-2 bg-surface-card-subtle">
-                <img class="w-full h-full object-cover" alt="Wood Sorrel" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDQ2CXrh0AiK2lFQUzmMhb6lDK7WyRDA1wrxGttoqxLnpdjhxptjbrO7Nhf5K1oUVEAtPpE2jM2v1mpeyFKsNzWcpbJmCuGDHVrQpd66bSHiOM_N5G3JBJbDfDHDZ_DLfk1OAW01ikmijgHuecsfHV1GCm7h2maR-Jq-_ar75xM3xm9Epop-wiaG63oKQ6f380cJzfguWfRrbqn8JzgIOe7bDaM0FrhaPtb_Ocf9H3D3h5ZbpxS9Y4j"/>
-                <div class="absolute top-1.5 right-1.5 bg-obsidian-scrim text-vellum-bg text-xs px-1.5 py-0.5 rounded">
-                  🌿 Plant
-                </div>
-              </div>
-              <span class="font-title-md text-title-md text-primary leading-tight truncate font-serif">Wood Sorrel</span>
-              <span class="font-latin-name text-latin-name italic text-secondary leading-tight mt-0.5 truncate font-serif">Oxalis acetosella</span>
-              <span class="font-label-sm text-label-sm text-on-surface-variant mt-2">10:22 AM · Creek Bank</span>
-            </div>
-
-            <div class="bg-surface-card rounded-xl p-3 shrink-0 w-44 shadow-sm flex flex-col border border-outline-hairline/60">
-              <div class="relative w-full h-28 rounded-lg overflow-hidden mb-2 bg-surface-card-subtle">
-                <img class="w-full h-full object-cover" alt="Peacock Butterfly" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAexl_Qlua_q1ROjV83Rf06cAJmxVOKI0KIyRNzq_EdKabF9wJX3NsJovQ9PTvfDnSAnZ9hNjTZGM0yt4F8ip1i_q19vufUjhf-y2HO-2PyCxIA8_LNONS_mEHHn59dOqhmtG6VTnE6j_Hoi_N2atdeku3R-xtl5AHSrgAI6l2H0K_lJKWKwmyEihbn9nN7eLOYakh7v12_XxBJOiCHkWKER8i_fuLWXSQXt6DwNBf5T619wsxPohqR"/>
-                <div class="absolute top-1.5 right-1.5 bg-obsidian-scrim text-vellum-bg text-xs px-1.5 py-0.5 rounded">
-                  🦋 Butterfly
-                </div>
-              </div>
-              <span class="font-title-md text-title-md text-primary leading-tight truncate font-serif">Peacock Butterfly</span>
-              <span class="font-latin-name text-latin-name italic text-secondary leading-tight mt-0.5 truncate font-serif">Aglais io</span>
-              <span class="font-label-sm text-label-sm text-on-surface-variant mt-2">10:37 AM · Sunny Clearing</span>
-            </div>
-
-            <div class="bg-surface-card rounded-xl p-3 shrink-0 w-44 shadow-sm flex flex-col border border-outline-hairline/60">
-              <div class="relative w-full h-28 rounded-lg overflow-hidden mb-2 bg-surface-card-subtle">
-                <img class="w-full h-full object-cover" alt="English Oak" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBFAc6s0PxA6AMydUT2cimz8LI1S3B_7CUWJ34xrQU3ux2ST96dLuZXn6__7QtIxOzvCX8vpvsXvdM1p7KNimkY4bW0ckRiIfRdR4LdOVV_eICHaF-ltbr6b2IG7sHcYrMk9eoqrVZc8l6qoSqg60ClhKo8kegAfua_KPMAx1om0Gr-hlgRw0KHE94Widzqx9D6naGiSxMEogo4G1-_ZdndoD1AkR2JijPHN1XskZrvVJMvynW_HJDO"/>
-                <div class="absolute top-1.5 right-1.5 bg-obsidian-scrim text-vellum-bg text-xs px-1.5 py-0.5 rounded">
-                  🌿 Plant
-                </div>
-              </div>
-              <span class="font-title-md text-title-md text-primary leading-tight truncate font-serif">English Oak</span>
-              <span class="font-latin-name text-latin-name italic text-secondary leading-tight mt-0.5 truncate font-serif">Quercus robur</span>
-              <span class="font-label-sm text-label-sm text-on-surface-variant mt-2">10:41 AM · Old Copse</span>
-            </div>
-
-            <div class="bg-surface-card rounded-xl p-3 shrink-0 w-44 shadow-sm flex flex-col border border-outline-hairline/60">
-              <div class="relative w-full h-28 rounded-lg overflow-hidden mb-2 bg-surface-card-subtle">
-                <img class="w-full h-full object-cover" alt="Goldcrest" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDMgK5MWU8EYxfnw9zSzPHE_G1KmWEShGW5NQ2nhVTUJYjQfAUeYMsxfiSl9VWPkyRpyrpuMOd781qnHFOF-o5q0KPnUrbYtZ0-GO-plqOYNY3noQyU_LCUY8kosa4FE8Rc88pYxvl-6GTGInk_c8_RwkY5wUhbRbYdU9t0i5DNxdpXWA06TKY1N6GxhghLML_JFQKCeAOKdkvc0VfTKIAJhiI20Ki3jxbEuF9kPmBXCz-r2beZ3Q61"/>
-                <div class="absolute top-1.5 right-1.5 bg-obsidian-scrim text-vellum-bg text-xs px-1.5 py-0.5 rounded">
-                  🐦 Bird
-                </div>
-              </div>
-              <span class="font-title-md text-title-md text-primary leading-tight truncate font-serif">Goldcrest</span>
-              <span class="font-latin-name text-latin-name italic text-secondary leading-tight mt-0.5 truncate font-serif">Regulus regulus</span>
-              <span class="font-label-sm text-label-sm text-on-surface-variant mt-2">10:48 AM · Pine Grove</span>
-            </div>
+          <div class="flex gap-space-sm overflow-x-auto px-margin pb-1" id="scroller-observations-container">
+            ${this.renderSpecimenCards(recentObservations)}
           </div>
         </div>
 
@@ -184,6 +147,52 @@ export class AdventureCompleteView {
     this.bindEvents();
   }
 
+  private renderSpecimenCards(observations: FieldObservation[]): string {
+    if (observations.length === 0) {
+      // Fallback Stitch specimens
+      return `
+        <div class="bg-surface-card rounded-xl p-3 shrink-0 w-44 shadow-sm flex flex-col border border-outline-hairline/60">
+          <div class="relative w-full h-28 rounded-lg overflow-hidden mb-2 bg-surface-card-subtle">
+            <img class="w-full h-full object-cover" alt="Asian Koel" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBZruNU5OzscDzFmOUIUrBq_rRAkMv7R9YeRyA9fWsbFGVdyE9yHiWUAjwn1MqTALLIhuMRAeuv0-0Qvemsq_VWA9qftsCctpNqit-zbPZ9fP0anyZGF6yapuhihIb9Dnh2DXvyo6gQME3Wm2dUj16Q_1n54IhQR7YQloKlq0iuhZOt0u1ft2Lj3C6NOXCtvXzWZhZGlZF4fwWc2anyK0rMy0oSWCMzx08pEju7Ykc74Ya2C82QDp9H"/>
+            <div class="absolute top-1.5 right-1.5 bg-obsidian-scrim text-vellum-bg text-xs px-1.5 py-0.5 rounded">🐦 Bird</div>
+          </div>
+          <span class="font-title-md text-title-md text-primary leading-tight truncate font-serif">Asian Koel</span>
+          <span class="font-latin-name text-latin-name italic text-secondary leading-tight mt-0.5 truncate font-serif">Eudynamys scolopaceus</span>
+          <span class="font-label-sm text-label-sm text-on-surface-variant mt-2">Today · Hanging Gardens</span>
+        </div>
+      `;
+    }
+
+    return observations
+      .map((obs) => {
+        const icon =
+          obs.kingdomOrGroup === 'Aves'
+            ? '🐦 Bird'
+            : obs.kingdomOrGroup === 'Plantae'
+            ? '🌿 Plant'
+            : obs.kingdomOrGroup === 'Insecta'
+            ? '🦋 Insect'
+            : obs.kingdomOrGroup === 'Fungi'
+            ? '🍄 Fungi'
+            : '🐾 Fauna';
+
+        return `
+          <div class="debrief-specimen-card bg-surface-card rounded-xl p-3 shrink-0 w-44 shadow-sm flex flex-col border border-outline-hairline/60 cursor-pointer active:scale-95 transition-transform" data-id="${obs.id}">
+            <div class="relative w-full h-28 rounded-lg overflow-hidden mb-2 bg-surface-card-subtle">
+              <img class="w-full h-full object-cover" alt="${obs.commonName || 'Specimen'}" src="${obs.photoUrl || 'https://lh3.googleusercontent.com/aida-public/AB6AXuBZruNU5OzscDzFmOUIUrBq_rRAkMv7R9YeRyA9fWsbFGVdyE9yHiWUAjwn1MqTALLIhuMRAeuv0-0Qvemsq_VWA9qftsCctpNqit-zbPZ9fP0anyZGF6yapuhihIb9Dnh2DXvyo6gQME3Wm2dUj16Q_1n54IhQR7YQloKlq0iuhZOt0u1ft2Lj3C6NOXCtvXzWZhZGlZF4fwWc2anyK0rMy0oSWCMzx08pEju7Ykc74Ya2C82QDp9H'}"/>
+              <div class="absolute top-1.5 right-1.5 bg-obsidian-scrim text-vellum-bg text-xs px-1.5 py-0.5 rounded">
+                ${icon}
+              </div>
+            </div>
+            <span class="font-title-md text-title-md text-primary leading-tight truncate font-serif">${obs.commonName || 'Specimen'}</span>
+            <span class="font-latin-name text-latin-name italic text-secondary leading-tight mt-0.5 truncate font-serif">${obs.scientificName || 'Unknown taxa'}</span>
+            <span class="font-label-sm text-label-sm text-on-surface-variant mt-2 truncate">${obs.readableDate}</span>
+          </div>
+        `;
+      })
+      .join('');
+  }
+
   private bindEvents(): void {
     const journalBtn = this.container.querySelector('#view-journal-btn');
     journalBtn?.addEventListener('click', () => {
@@ -197,6 +206,18 @@ export class AdventureCompleteView {
     const newAdvBtn = this.container.querySelector('#new-adventure-btn');
     newAdvBtn?.addEventListener('click', () => {
       this.onStartAnother();
+    });
+
+    const cards = this.container.querySelectorAll('.debrief-specimen-card');
+    cards.forEach((card) => {
+      card.addEventListener('click', () => {
+        const id = card.getAttribute('data-id');
+        if (id && this.onSelectSpecimen) {
+          this.onSelectSpecimen(id);
+        } else {
+          this.onViewJournal();
+        }
+      });
     });
   }
 }

@@ -1,7 +1,11 @@
+import { db } from '../../storage/db';
+import type { FieldObservation } from '../../storage/types';
+
 export class AdventureMapView {
   private container: HTMLElement;
   private onSelectSpecimen: (specimenId: string) => void;
   private onViewFolio: () => void;
+  private observations: FieldObservation[] = [];
 
   constructor(
     container: HTMLElement,
@@ -15,7 +19,10 @@ export class AdventureMapView {
     this.onViewFolio = callbacks.onViewFolio;
   }
 
-  render(): void {
+  async render(): Promise<void> {
+    this.observations = await db.getRecentObservations(6);
+    const discoveriesCount = this.observations.length > 0 ? this.observations.length : 5;
+
     this.container.innerHTML = `
       <div class="flex flex-col w-full relative view-enter">
         <!-- Interactive Topographic Canvas Container -->
@@ -122,7 +129,7 @@ export class AdventureMapView {
                   <span class="material-symbols-outlined text-[16px] text-on-tertiary-container" style="font-variation-settings: 'FILL' 1;">near_me</span>
                   <span class="font-label-sm text-label-sm tracking-wider uppercase text-on-surface-variant font-bold">Your Adventure</span>
                 </div>
-                <span class="px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm">Active Track</span>
+                <span class="px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-semibold">Active Track</span>
               </div>
               <div class="grid grid-cols-3 divide-x-0 pt-1">
                 <div class="flex flex-col">
@@ -134,7 +141,7 @@ export class AdventureMapView {
                   <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Elapsed</span>
                 </div>
                 <div class="flex flex-col pl-3">
-                  <span class="font-headline-md text-headline-md text-primary leading-tight font-serif">5<span class="font-label-md text-label-md ml-1 text-on-surface-variant font-normal">LOGS</span></span>
+                  <span class="font-headline-md text-headline-md text-primary leading-tight font-serif">${discoveriesCount}<span class="font-label-md text-label-md ml-1 text-on-surface-variant font-normal">LOGS</span></span>
                   <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Discoveries</span>
                 </div>
               </div>
@@ -177,77 +184,7 @@ export class AdventureMapView {
 
           <!-- Specimen Cards Horizontal Scroller -->
           <div class="w-full overflow-x-auto flex gap-space-md pb-space-sm snap-x snap-mandatory">
-            <!-- Card 1: Asian Koel -->
-            <div class="map-carousel-card min-w-[260px] max-w-[260px] bg-surface-card rounded-xl p-space-sm shadow-sm flex flex-col gap-space-sm snap-start shrink-0 cursor-pointer border border-outline-hairline/60" data-id="asian-koel">
-              <div class="relative w-full h-32 rounded-lg overflow-hidden bg-surface-container-high">
-                <img class="w-full h-full object-cover" alt="Asian Koel" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB4v7MAnlTBPhXOjjznhrNUaySsS_57290id3-GzEnq4vAejxjOFxhjQ_fKAuxVRwa9lcDV2rWOnu77U0DQUGitVLZ3M_Vetafjme5DjfEq1bZJd2DCf847oaJ1He-eNpUPSRWKUNbAxr4zXKaFp6PiNdY_Qk3uJjz-m-8mJWHgjYXZjiCFH7UzJDSDXgodMNmdGM-AxIeWOAgCz8I_3YlhErlffPtMQYYp3-XdzAa684D-XRM4GzSJ"/>
-                <div class="absolute bottom-2 left-2 px-2 py-0.5 rounded-full bg-obsidian-scrim text-vellum-bg flex items-center gap-1">
-                  <span class="w-1.5 h-1.5 rounded-full bg-tertiary-fixed-dim"></span>
-                  <span class="font-label-sm text-label-sm tracking-wider">96% MATCH</span>
-                </div>
-                <div class="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-obsidian-scrim text-vellum-bg">
-                  <span class="font-label-sm text-label-sm tracking-wide">14:12</span>
-                </div>
-              </div>
-              <div class="flex flex-col min-w-0 px-1">
-                <span class="font-label-sm text-label-sm text-on-tertiary-container uppercase tracking-wider font-bold">Fauna · Aves</span>
-                <h3 class="font-title-md text-title-md text-primary truncate leading-snug font-serif">Asian Koel</h3>
-                <p class="font-latin-name text-latin-name italic text-secondary truncate">Eudynamys scolopaceus</p>
-              </div>
-              <div class="flex items-center gap-1.5 px-1 pt-1">
-                <span class="px-2 py-0.5 rounded-full bg-sage-fill text-primary font-label-md text-label-md">Native</span>
-                <span class="px-2 py-0.5 rounded-full bg-sage-fill text-primary font-label-md text-label-md">Diurnal</span>
-                <span class="px-2 py-0.5 rounded-full bg-sage-fill text-primary font-label-md text-label-md">LC</span>
-              </div>
-            </div>
-
-            <!-- Card 2: Wild Orchid -->
-            <div class="map-carousel-card min-w-[260px] max-w-[260px] bg-surface-card rounded-xl p-space-sm shadow-sm flex flex-col gap-space-sm snap-start shrink-0 cursor-pointer border border-outline-hairline/60" data-id="wild-orchid">
-              <div class="relative w-full h-32 rounded-lg overflow-hidden bg-surface-container-high">
-                <img class="w-full h-full object-cover" alt="Fox Brush Orchid" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAgaRJWT74EqIRstXN_SurEhVvSS8oeVcVqEF2ApvNKoRKvvMlLO2L4mifpVaNzWuSq3nl3OBbBRETwl8Zn23IrB01k403I3ISnZ0j6uSGshQNaX4YIrkb6-GmAxink5dtdgsJ3d-hwo3c_IeITVLY5RIb6GBFSXJJWkcwhYYSUS0Ytgt3ZRd_GU0xKMCrBO7vLCKeRMPYezXwWL9UR0aI_FY05Om9eLE3rh1NVPEMWYlPekQK_zonB"/>
-                <div class="absolute bottom-2 left-2 px-2 py-0.5 rounded-full bg-obsidian-scrim text-vellum-bg flex items-center gap-1">
-                  <span class="w-1.5 h-1.5 rounded-full bg-tertiary-fixed-dim"></span>
-                  <span class="font-label-sm text-label-sm tracking-wider">92% MATCH</span>
-                </div>
-                <div class="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-obsidian-scrim text-vellum-bg">
-                  <span class="font-label-sm text-label-sm tracking-wide">13:48</span>
-                </div>
-              </div>
-              <div class="flex flex-col min-w-0 px-1">
-                <span class="font-label-sm text-label-sm text-on-tertiary-container uppercase tracking-wider font-bold">Flora · Orchidaceae</span>
-                <h3 class="font-title-md text-title-md text-primary truncate leading-snug font-serif">Fox Brush Orchid</h3>
-                <p class="font-latin-name text-latin-name italic text-secondary truncate">Aerides maculosa</p>
-              </div>
-              <div class="flex items-center gap-1.5 px-1 pt-1">
-                <span class="px-2 py-0.5 rounded-full bg-sage-fill text-primary font-label-md text-label-md">Epiphyte</span>
-                <span class="px-2 py-0.5 rounded-full bg-sage-fill text-primary font-label-md text-label-md">Endemic</span>
-                <span class="px-2 py-0.5 rounded-full bg-sage-fill text-primary font-label-md text-label-md">VU</span>
-              </div>
-            </div>
-
-            <!-- Card 3: Common Mormon Butterfly -->
-            <div class="map-carousel-card min-w-[260px] max-w-[260px] bg-surface-card rounded-xl p-space-sm shadow-sm flex flex-col gap-space-sm snap-start shrink-0 cursor-pointer border border-outline-hairline/60" data-id="common-mormon">
-              <div class="relative w-full h-32 rounded-lg overflow-hidden bg-surface-container-high">
-                <img class="w-full h-full object-cover" alt="Common Mormon" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCx5RdTPJT0vfZoBoiRNgX_MWcJeCbGLDAzBGktEISLF_JEPaJYewkCF3aoKnk1pmowuJ70YLLBHKReHWTB2SMg-1GDwn2IwoZ1SRZ_AjCRVW8lGFitd9dF61N-w2W6Rku7hDoGSPPfuEfTUGIN6MM0ypgxZyu_XszVU-YGDAEmCrK51tWw7NEqjGrerYwwQrfPJIWOdXDrHbshTPXYGY85j49p2AVKGD44egWTLez0qckhOrTwR5yR"/>
-                <div class="absolute bottom-2 left-2 px-2 py-0.5 rounded-full bg-obsidian-scrim text-vellum-bg flex items-center gap-1">
-                  <span class="w-1.5 h-1.5 rounded-full bg-tertiary-fixed-dim"></span>
-                  <span class="font-label-sm text-label-sm tracking-wider">98% MATCH</span>
-                </div>
-                <div class="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-obsidian-scrim text-vellum-bg">
-                  <span class="font-label-sm text-label-sm tracking-wide">13:15</span>
-                </div>
-              </div>
-              <div class="flex flex-col min-w-0 px-1">
-                <span class="font-label-sm text-label-sm text-on-tertiary-container uppercase tracking-wider font-bold">Insecta · Papilionidae</span>
-                <h3 class="font-title-md text-title-md text-primary truncate leading-snug font-serif">Common Mormon</h3>
-                <p class="font-latin-name text-latin-name italic text-secondary truncate">Papilio polytes</p>
-              </div>
-              <div class="flex items-center gap-1.5 px-1 pt-1">
-                <span class="px-2 py-0.5 rounded-full bg-sage-fill text-primary font-label-md text-label-md">Native</span>
-                <span class="px-2 py-0.5 rounded-full bg-sage-fill text-primary font-label-md text-label-md">Pollinator</span>
-                <span class="px-2 py-0.5 rounded-full bg-sage-fill text-primary font-label-md text-label-md">LC</span>
-              </div>
-            </div>
+            ${this.renderCarouselCards()}
           </div>
 
           <!-- Expedition Logbook Note -->
@@ -270,6 +207,69 @@ export class AdventureMapView {
     `;
 
     this.bindEvents();
+  }
+
+  private renderCarouselCards(): string {
+    if (this.observations.length === 0) {
+      return `
+        <!-- Card 1: Asian Koel -->
+        <div class="map-carousel-card min-w-[260px] max-w-[260px] bg-surface-card rounded-xl p-space-sm shadow-sm flex flex-col gap-space-sm snap-start shrink-0 cursor-pointer border border-outline-hairline/60" data-id="asian-koel">
+          <div class="relative w-full h-32 rounded-lg overflow-hidden bg-surface-container-high">
+            <img class="w-full h-full object-cover" alt="Asian Koel" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB4v7MAnlTBPhXOjjznhrNUaySsS_57290id3-GzEnq4vAejxjOFxhjQ_fKAuxVRwa9lcDV2rWOnu77U0DQUGitVLZ3M_Vetafjme5DjfEq1bZJd2DCf847oaJ1He-eNpUPSRWKUNbAxr4zXKaFp6PiNdY_Qk3uJjz-m-8mJWHgjYXZjiCFH7UzJDSDXgodMNmdGM-AxIeWOAgCz8I_3YlhErlffPtMQYYp3-XdzAa684D-XRM4GzSJ"/>
+            <div class="absolute bottom-2 left-2 px-2 py-0.5 rounded-full bg-obsidian-scrim text-vellum-bg flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-tertiary-fixed-dim"></span>
+              <span class="font-label-sm text-label-sm tracking-wider">96% MATCH</span>
+            </div>
+          </div>
+          <div class="flex flex-col min-w-0 px-1">
+            <span class="font-label-sm text-label-sm text-on-tertiary-container uppercase tracking-wider font-bold">Fauna · Aves</span>
+            <h3 class="font-title-md text-title-md text-primary truncate leading-snug font-serif">Asian Koel</h3>
+            <p class="font-latin-name text-latin-name italic text-secondary truncate">Eudynamys scolopaceus</p>
+          </div>
+        </div>
+      `;
+    }
+
+    return this.observations
+      .slice(0, 4)
+      .map((obs) => {
+        const groupLabel =
+          obs.kingdomOrGroup === 'Aves'
+            ? 'Fauna · Aves'
+            : obs.kingdomOrGroup === 'Plantae'
+            ? 'Flora · Botanical'
+            : obs.kingdomOrGroup === 'Insecta'
+            ? 'Insecta · Entomology'
+            : 'Fauna · Wildlife';
+
+        const matchPct = Math.round((obs.confidenceScore ?? 0.94) * 100);
+
+        return `
+          <div class="map-carousel-card min-w-[260px] max-w-[260px] bg-surface-card rounded-xl p-space-sm shadow-sm flex flex-col gap-space-sm snap-start shrink-0 cursor-pointer border border-outline-hairline/60 active:scale-95 transition-transform" data-id="${obs.id}">
+            <div class="relative w-full h-32 rounded-lg overflow-hidden bg-surface-container-high">
+              <img class="w-full h-full object-cover" alt="${obs.commonName || 'Specimen'}" src="${obs.photoUrl || 'https://lh3.googleusercontent.com/aida-public/AB6AXuB4v7MAnlTBPhXOjjznhrNUaySsS_57290id3-GzEnq4vAejxjOFxhjQ_fKAuxVRwa9lcDV2rWOnu77U0DQUGitVLZ3M_Vetafjme5DjfEq1bZJd2DCf847oaJ1He-eNpUPSRWKUNbAxr4zXKaFp6PiNdY_Qk3uJjz-m-8mJWHgjYXZjiCFH7UzJDSDXgodMNmdGM-AxIeWOAgCz8I_3YlhErlffPtMQYYp3-XdzAa684D-XRM4GzSJ'}"/>
+              <div class="absolute bottom-2 left-2 px-2 py-0.5 rounded-full bg-obsidian-scrim text-vellum-bg flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-tertiary-fixed-dim"></span>
+                <span class="font-label-sm text-label-sm tracking-wider">${matchPct}% MATCH</span>
+              </div>
+              <div class="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-obsidian-scrim text-vellum-bg">
+                <span class="font-label-sm text-label-sm tracking-wide">${obs.readableDate.split('·')[1]?.trim() || 'Log'}</span>
+              </div>
+            </div>
+            <div class="flex flex-col min-w-0 px-1">
+              <span class="font-label-sm text-label-sm text-on-tertiary-container uppercase tracking-wider font-bold">${groupLabel}</span>
+              <h3 class="font-title-md text-title-md text-primary truncate leading-snug font-serif">${obs.commonName || 'Field Organism'}</h3>
+              <p class="font-latin-name text-latin-name italic text-secondary truncate font-serif">${obs.scientificName || 'Unknown Taxa'}</p>
+            </div>
+            <div class="flex items-center gap-1.5 px-1 pt-1">
+              <span class="px-2 py-0.5 rounded-full bg-sage-fill text-primary font-label-md text-label-md">Native</span>
+              <span class="px-2 py-0.5 rounded-full bg-sage-fill text-primary font-label-md text-label-md">Verified</span>
+              <span class="px-2 py-0.5 rounded-full bg-sage-fill text-primary font-label-md text-label-md">LC</span>
+            </div>
+          </div>
+        `;
+      })
+      .join('');
   }
 
   private bindEvents(): void {

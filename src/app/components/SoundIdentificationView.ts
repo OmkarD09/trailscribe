@@ -1,6 +1,16 @@
+import { db } from '../../storage/db';
+import { AudioFeedback } from '../../utils/audio-helpers';
+import type { FieldObservation } from '../../storage/types';
+
 export class SoundIdentificationView {
   private container: HTMLElement;
   private onAddToJournal: () => void;
+  private audioStream: MediaStream | null = null;
+  private audioContext: AudioContext | null = null;
+  private analyserNode: AnalyserNode | null = null;
+  private animationFrameId: number | null = null;
+  private isListening: boolean = false;
+  private simPhase: number = 0;
 
   constructor(
     container: HTMLElement,
@@ -18,13 +28,13 @@ export class SoundIdentificationView {
         <!-- Status Context Ribbon -->
         <div class="px-margin pt-space-sm pb-space-xs flex items-center justify-between">
           <div class="flex items-center gap-space-xs">
-            <span class="w-2 h-2 rounded-full bg-amber-on-container animate-ping"></span>
-            <span class="font-label-sm text-label-sm text-primary uppercase tracking-widest font-bold">Acoustic Sensor Active</span>
+            <span class="w-2 h-2 rounded-full bg-amber-on-container animate-ping" id="audio-sensor-ping"></span>
+            <span class="font-label-sm text-label-sm text-primary uppercase tracking-widest font-bold" id="audio-sensor-status">Acoustic Sensor Active</span>
           </div>
-          <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant shadow-sm">
-            <span class="material-symbols-outlined text-[13px] text-secondary">graphic_eq</span>
-            <span class="font-label-sm text-label-sm font-bold tracking-tight">48.2 kHz Raw Feed</span>
-          </div>
+          <button id="toggle-mic-btn" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container-high text-on-surface-variant shadow-sm hover:bg-surface-container active:scale-95 transition-all cursor-pointer">
+            <span class="material-symbols-outlined text-[13px] text-secondary">mic</span>
+            <span class="font-label-sm text-label-sm font-bold tracking-tight" id="mic-feed-label">48.2 kHz Raw Feed</span>
+          </button>
         </div>
 
         <!-- Primary Sound Monitoring Viewport -->
@@ -37,53 +47,35 @@ export class SoundIdentificationView {
             <div class="relative z-10 flex items-center justify-between">
               <div class="flex items-center gap-1.5 bg-obsidian-scrim px-2.5 py-1 rounded-full">
                 <span class="material-symbols-outlined text-[14px] text-tertiary-fixed-dim">mic</span>
-                <span class="font-label-sm text-label-sm text-vellum-bg uppercase tracking-wider font-semibold">Omni Condenser</span>
+                <span class="font-label-sm text-label-sm text-vellum-bg uppercase tracking-wider font-semibold" id="mic-type-label">Omni Condenser</span>
               </div>
               <div class="flex items-center gap-2 bg-obsidian-scrim px-2.5 py-1 rounded-full">
-                <span class="font-label-sm text-label-sm text-tertiary-fixed-dim tracking-wide font-mono">1.8 - 4.4 kHz band</span>
+                <span class="font-label-sm text-label-sm text-tertiary-fixed-dim tracking-wide font-mono" id="band-range-label">1.8 - 4.4 kHz band</span>
               </div>
             </div>
 
             <!-- Live Dynamic Canvas Spectrogram & Sonogram HUD -->
             <div class="relative z-10 my-auto py-2 flex flex-col items-center justify-center">
-              <!-- Frequency Spectrogram Waveform -->
+              <!-- Canvas Frequency Spectrogram Waveform -->
               <div class="w-full h-36 relative flex items-center justify-center">
-                <svg class="w-full h-full" fill="none" preserveaspectratio="none" viewbox="0 0 340 130">
-                  <!-- Background Ambient Forest Noise Wave (Muted Sage) -->
-                  <path d="M0,65 Q18,63 35,66 T70,64 T105,67 T140,63 T175,66 T210,62 T245,67 T280,63 T315,66 T340,64" fill="none" stroke="#82a291" stroke-opacity="0.35" stroke-width="1.5"></path>
-                  <path d="M0,65 Q15,69 30,62 T60,68 T90,61 T120,67 T150,60 T180,68 T210,62 T240,69 T270,61 T300,67 T340,65" fill="none" stroke="#82a291" stroke-opacity="0.45" stroke-width="1.5"></path>
-                  <!-- Focal Harmonic Asian Koel Call -->
-                  <path d="M0,65 Q25,65 50,65 T95,58 T135,78 T170,30 T205,98 T240,24 T275,104 T305,60 T340,65" fill="none" id="bio-pulse-base" stroke="#adcebc" stroke-linecap="round" stroke-opacity="0.8" stroke-width="2.5"></path>
-                  <path class="animate-pulse" d="M0,65 Q30,65 60,65 T100,52 T140,82 T175,20 T210,108 T245,14 T280,112 T310,58 T340,65" fill="none" id="bio-pulse-harmonic" stroke="#feb956" stroke-linecap="round" stroke-width="3"></path>
-                  <path d="M0,65 Q35,65 70,65 T110,61 T145,72 T178,42 T212,88 T248,34 T282,92 T315,63 T340,65" fill="none" stroke="#ffddb4" stroke-linecap="round" stroke-opacity="0.9" stroke-width="1.2"></path>
-                  <!-- Sonogram Spectral Vertical Bars in Center Stage -->
-                  <g opacity="0.35">
-                    <line stroke="#c9ead7" stroke-dasharray="2 3" stroke-width="2" x1="165" x2="165" y1="36" y2="94"></line>
-                    <line stroke="#c9ead7" stroke-dasharray="2 3" stroke-width="2" x1="180" x2="180" y1="22" y2="108"></line>
-                    <line stroke="#c9ead7" stroke-dasharray="2 3" stroke-width="2" x1="195" x2="195" y1="32" y2="98"></line>
-                    <line stroke="#feb956" stroke-dasharray="3 3" stroke-width="2" x1="225" x2="225" y1="26" y2="104"></line>
-                    <line stroke="#feb956" stroke-dasharray="3 3" stroke-width="2.5" x1="242" x2="242" y1="16" y2="114"></line>
-                    <line stroke="#feb956" stroke-dasharray="3 3" stroke-width="2" x1="260" x2="260" y1="28" y2="102"></line>
-                  </g>
-                  <!-- Target Isolation Box indicating classified burst -->
-                  <rect fill="none" height="110" rx="8" stroke="#feb956" stroke-dasharray="4 4" stroke-opacity="0.6" stroke-width="1" width="135" x="155" y="10"></rect>
-                </svg>
+                <canvas id="spectrogram-canvas" class="w-full h-full rounded-lg" width="680" height="260"></canvas>
+                
                 <!-- Realtime Audio Target Reticle -->
-                <div class="absolute right-12 top-2 bg-obsidian-scrim px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
+                <div class="absolute right-4 top-2 bg-obsidian-scrim px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
                   <span class="w-1.5 h-1.5 rounded-full bg-tertiary-fixed-dim animate-ping"></span>
-                  <span class="font-label-sm text-label-sm text-tertiary-fixed font-mono tracking-wider">CAPTURE 03.4s</span>
+                  <span class="font-label-sm text-label-sm text-tertiary-fixed font-mono tracking-wider" id="capture-timer">CAPTURE 03.4s</span>
                 </div>
               </div>
               <!-- Field Guidance Callout -->
-              <p class="font-body-sm text-body-sm text-primary-fixed mt-1 text-center font-medium">
-                Hold still for a few seconds. Listening to canopy and brush.
+              <p class="font-body-sm text-body-sm text-primary-fixed mt-1 text-center font-medium" id="audio-guidance-msg">
+                Listening to canopy and brush. Harmonics tracked in real time.
               </p>
             </div>
 
             <!-- Spectrogram Scale & Frequency Anchors -->
             <div class="relative z-10 flex items-center justify-between text-on-primary-container font-label-sm text-label-sm font-mono pt-1">
               <span>0 Hz</span>
-              <span class="text-tertiary-fixed-dim font-bold">▲ 2.4 kHz (DOMINANT PEAK)</span>
+              <span class="text-tertiary-fixed-dim font-bold" id="dominant-peak-label">▲ 2.4 kHz (DOMINANT PEAK)</span>
               <span>8.0 kHz</span>
             </div>
           </div>
@@ -100,7 +92,7 @@ export class SoundIdentificationView {
                 </div>
                 <div class="flex flex-col min-w-0">
                   <span class="font-label-sm text-label-sm text-amber-on-container uppercase tracking-wider font-bold">
-                    FAUNA IDENTIFIED · PASS 04
+                    FAUNA IDENTIFIED · BIO-ACOUSTICS
                   </span>
                   <h2 class="font-headline-lg text-headline-lg text-primary leading-tight truncate font-serif">
                     Asian Koel
@@ -187,7 +179,7 @@ export class SoundIdentificationView {
             </button>
             <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container text-on-surface-variant">
               <span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
-              <span class="font-label-sm text-label-sm uppercase font-bold tracking-wider">Local Audio AI · On-Device Whisper</span>
+              <span class="font-label-sm text-label-sm uppercase font-bold tracking-wider">Local Audio AI · Bio-Acoustics</span>
             </div>
           </div>
         </div>
@@ -195,28 +187,179 @@ export class SoundIdentificationView {
     `;
 
     this.bindEvents();
+    this.startSpectrogramLoop();
   }
 
   private bindEvents(): void {
     const addBtn = this.container.querySelector('#addJournalBtn');
     if (addBtn) {
-      addBtn.addEventListener('click', () => {
+      addBtn.addEventListener('click', async () => {
         const originalContent = addBtn.innerHTML;
         addBtn.classList.add('bg-secondary');
         addBtn.innerHTML = '<span class="material-symbols-outlined text-[20px]">check_circle</span><span>RECORD ARCHIVED (#18)</span>';
+
+        AudioFeedback.playTone('save');
+
+        // Commit observation into db
+        const soundObs: FieldObservation = {
+          id: `sound-${Date.now()}`,
+          timestamp: Date.now(),
+          readableDate: `Today · ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
+          coordinates: { latitude: 18.9553, longitude: 72.8055, accuracy: 5 },
+          photoUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuC63PjgUioWhD_BoFXGkSv8Fc2oRzJNBmtmUrfsIiKXC1DzdREby8XET9p4bIPxPdxr-QyEzD4rYFYvDIZi0Mmx7Q8HObi3dUIVBTIfv2FryFDdTaVg7WhScZHYtzRgPptyc9-finMJgnmh8Y1sZTzvZZOcubV5IZi91viUSswT7mRe51jq-BXObc9gOCPv_II9rLbx4OmxKJSykvrAPjsaPAsqAVmviTiwQ4WaAg2HpGO5ZiGyr0ct',
+          speciesCandidates: ['Asian Koel', 'Eudynamys scolopaceus'],
+          commonName: 'Asian Koel (Acoustic Call)',
+          scientificName: 'Eudynamys scolopaceus',
+          confidenceScore: 0.91,
+          kingdomOrGroup: 'Aves',
+          habitat: 'Acoustic canopy recording · Hanging Gardens',
+          substrate: 'Ficus benghalensis branch',
+          abundanceCount: 1,
+          lifeStage: 'adult',
+          fieldNotes: 'Bio-acoustic territory vocalization recorded via on-device condenser sensor. 2.4 kHz dominant peak with ascending harmonic trill.',
+          synced: false
+        };
+
+        await db.saveObservation(soundObs);
+
         setTimeout(() => {
           addBtn.innerHTML = originalContent;
           addBtn.classList.remove('bg-secondary');
+          this.stop();
           this.onAddToJournal();
-        }, 1200);
+        }, 1000);
       });
     }
 
     const relistenBtn = this.container.querySelector('#relistenBtn');
     relistenBtn?.addEventListener('click', () => {
-      // Play brief synthesized naturalist tone
       this.playSyntheticChirp();
     });
+
+    const toggleMicBtn = this.container.querySelector('#toggle-mic-btn');
+    toggleMicBtn?.addEventListener('click', () => {
+      this.toggleMicrophoneStream();
+    });
+  }
+
+  private async toggleMicrophoneStream(): Promise<void> {
+    if (this.isListening) {
+      this.stopMic();
+      const label = this.container.querySelector('#mic-feed-label');
+      if (label) label.textContent = 'Synthetic Feed';
+    } else {
+      try {
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+          this.audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          this.audioContext = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+          const source = this.audioContext.createMediaStreamSource(this.audioStream);
+          this.analyserNode = this.audioContext.createAnalyser();
+          this.analyserNode.fftSize = 256;
+          source.connect(this.analyserNode);
+          this.isListening = true;
+
+          const label = this.container.querySelector('#mic-feed-label');
+          if (label) label.textContent = 'Live Mic Feed';
+          const micType = this.container.querySelector('#mic-type-label');
+          if (micType) micType.textContent = 'Hardware Mic';
+        }
+      } catch (e) {
+        console.warn('Microphone permission or hardware notice:', e);
+      }
+    }
+  }
+
+  private startSpectrogramLoop(): void {
+    const canvas = this.container.querySelector('#spectrogram-canvas') as HTMLCanvasElement;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const width = canvas.width;
+    const height = canvas.height;
+    const freqData = new Uint8Array(128);
+
+    const renderFrame = () => {
+      this.simPhase += 0.04;
+
+      ctx.clearRect(0, 0, width, height);
+
+      // 1. Draw Background Optical Reticle Grid
+      ctx.strokeStyle = 'rgba(211, 224, 216, 0.08)';
+      ctx.lineWidth = 1;
+      for (let x = 40; x < width; x += 60) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, height);
+        ctx.stroke();
+      }
+
+      // 2. Frequency Data Extraction (Real Mic or Synthetic Harmonic)
+      if (this.isListening && this.analyserNode) {
+        this.analyserNode.getByteFrequencyData(freqData);
+      } else {
+        // Synthetic Asian Koel acoustic simulation
+        for (let i = 0; i < 64; i++) {
+          const harmonic = Math.sin(this.simPhase * 2 + i * 0.15) * 50;
+          const peak = Math.exp(-Math.pow((i - 28) / 8, 2)) * 140;
+          freqData[i] = Math.max(10, Math.min(255, 30 + harmonic + peak));
+        }
+      }
+
+      // 3. Draw Vertical Sonogram Bars
+      const barWidth = 6;
+      const barSpacing = 4;
+      const totalBars = 32;
+      const startX = width / 2 - (totalBars * (barWidth + barSpacing)) / 2;
+
+      for (let i = 0; i < totalBars; i++) {
+        const val = freqData[i] || 20;
+        const barHeight = (val / 255) * (height * 0.7);
+        const x = startX + i * (barWidth + barSpacing);
+        const y = height / 2 - barHeight / 2;
+
+        if (i >= 12 && i <= 22) {
+          // Dominant Peak Harmonic in Amber
+          ctx.fillStyle = '#feb956';
+        } else {
+          // Sage ambient
+          ctx.fillStyle = 'rgba(168, 206, 188, 0.45)';
+        }
+        ctx.beginPath();
+        ctx.roundRect(x, y, barWidth, barHeight, 3);
+        ctx.fill();
+      }
+
+      // 4. Draw Continuous Ambient Waveform (Muted Sage)
+      ctx.beginPath();
+      ctx.strokeStyle = 'rgba(130, 162, 145, 0.4)';
+      ctx.lineWidth = 2;
+      for (let x = 0; x <= width; x += 8) {
+        const y = height / 2 + Math.sin(x * 0.03 + this.simPhase) * 16;
+        if (x === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      // 5. Draw Focal Koel Harmonic Curve (Amber)
+      ctx.beginPath();
+      ctx.strokeStyle = '#feb956';
+      ctx.lineWidth = 3;
+      ctx.lineCap = 'round';
+      for (let x = 0; x <= width; x += 10) {
+        const envelope = Math.exp(-Math.pow((x - width / 2) / 160, 2));
+        const chirpWave = Math.sin(x * 0.08 - this.simPhase * 3) * 52 * envelope;
+        const y = height / 2 + chirpWave;
+        if (x === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      this.animationFrameId = requestAnimationFrame(renderFrame);
+    };
+
+    renderFrame();
   }
 
   private playSyntheticChirp(): void {
@@ -227,14 +370,34 @@ export class SoundIdentificationView {
       osc.type = 'sine';
       osc.frequency.setValueAtTime(1800, audioCtx.currentTime);
       osc.frequency.exponentialRampToValueAtTime(3600, audioCtx.currentTime + 0.3);
-      gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
       osc.connect(gain);
       gain.connect(audioCtx.destination);
       osc.start();
       osc.stop(audioCtx.currentTime + 0.36);
     } catch (e) {
-      console.warn('AudioContext not allowed or unavailable:', e);
+      console.warn('AudioContext unavailable:', e);
+    }
+  }
+
+  private stopMic(): void {
+    if (this.audioStream) {
+      this.audioStream.getTracks().forEach((t) => t.stop());
+      this.audioStream = null;
+    }
+    if (this.audioContext) {
+      this.audioContext.close();
+      this.audioContext = null;
+    }
+    this.isListening = false;
+  }
+
+  public stop(): void {
+    this.stopMic();
+    if (this.animationFrameId !== null) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
     }
   }
 }

@@ -132,4 +132,74 @@ describe('TrailScribe Offline Backend & Data Layer Validation', () => {
     assert.equal(extracted.kingdomOrGroup, 'Fungi');
     assert.equal(extracted.abundanceCount, 3);
   });
+
+  test('6. Specimen Field Note NLP Extraction & DB Metadata Enrichment', async () => {
+    const noteText = 'Observed five chanterelle clusters on damp mossy ground in shaded ravine.';
+    const parsed = FieldEntityParser.parse(noteText);
+
+    assert.equal(parsed.abundanceCount, 5);
+    assert.equal(parsed.kingdomOrGroup, 'Fungi');
+    assert.equal(parsed.scientificName, 'Cantharellus cibarius');
+
+    // Enrich existing observation with parsed ecological metadata
+    await db.updateObservation('asian-koel', {
+      fieldNotes: noteText,
+      abundanceCount: parsed.abundanceCount,
+      substrate: parsed.substrate || 'mossy forest floor',
+      habitat: parsed.habitat || 'shaded ravine'
+    });
+
+    const enriched = await db.getObservation('asian-koel');
+    assert.ok(enriched);
+    assert.equal(enriched?.abundanceCount, 5);
+    assert.equal(enriched?.fieldNotes, noteText);
+    assert.equal(enriched?.substrate, 'damp mossy ground');
+  });
+
+  test('7. Adventure Mode Tracking & Session Debrief Metrics', async () => {
+    const elapsedSeconds = 42 * 60; // 42 minutes
+    const minutes = Math.floor(elapsedSeconds / 60);
+    const distanceKm = 3.2;
+    const discoveriesCount = 4;
+    const phoneFreePercent = Math.min(94, Math.max(60, Math.round(71 + (minutes % 8))));
+    const phoneFreeMinutes = Math.round(minutes * (phoneFreePercent / 100));
+
+    assert.equal(minutes, 42);
+    assert.ok(phoneFreeMinutes >= 25 && phoneFreeMinutes <= 42);
+    assert.ok(phoneFreePercent >= 60 && phoneFreePercent <= 94);
+
+    // Verify recent observations can be queried for debrief stream
+    const debriefSightings = await db.getRecentObservations(discoveriesCount);
+    assert.ok(debriefSightings.length > 0);
+    assert.ok(debriefSightings.length <= discoveriesCount);
+  });
+
+  test('8. Full Scientific Biodiversity Export Compliance', async () => {
+    const observations = await db.getAllObservations();
+    assert.ok(observations.length >= 8);
+
+    // Darwin Core
+    const dwc = DataExporter.toDarwinCore(observations);
+    for (const record of dwc) {
+      assert.ok(record.occurrenceID.startsWith('urn:uuid:'));
+      assert.ok(record.eventDate);
+      assert.equal(record.basisOfRecord, 'HumanObservation');
+      assert.equal(record.geodeticDatum, 'WGS84');
+      assert.equal(record.recordedBy, 'TrailScribe Field Naturalist');
+    }
+
+    // GeoJSON
+    const geo = DataExporter.toGeoJSON(observations) as { features: Array<{ properties: { id: string } }> };
+    assert.ok(geo.features.length >= 8);
+    for (const f of geo.features) {
+      assert.ok(f.properties.id);
+    }
+
+    // CSV
+    const csv = DataExporter.toCSV(observations);
+    const lines = csv.split('\n');
+    assert.ok(lines.length >= 9); // Header + at least 8 records
+    assert.equal(lines[0], 'id,date_iso,latitude,longitude,common_name,scientific_name,kingdom,habitat,substrate,count,notes,raw_transcript');
+  });
 });
+

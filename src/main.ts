@@ -8,7 +8,7 @@ import { SoundIdentificationView } from './app/components/SoundIdentificationVie
 import { IdentificationResultView } from './app/components/IdentificationResultView';
 import { FieldJournalView } from './app/components/FieldJournalView';
 import { AdventureMapView } from './app/components/AdventureMapView';
-import { AdventureModeView } from './app/components/AdventureModeView';
+import { AdventureModeView, type AdventureSessionSummary } from './app/components/AdventureModeView';
 import { AdventureCompleteView } from './app/components/AdventureCompleteView';
 import { ProfileOutdoorYearView } from './app/components/ProfileOutdoorYearView';
 
@@ -121,6 +121,9 @@ class TrailScribeApp {
   private previousScreen: ScreenId = 'field-hub';
   private selectedSpecimenId: string = 'asian-koel';
   private activeScannerInstance: NatureScannerView | null = null;
+  private activeSoundInstance: SoundIdentificationView | null = null;
+  private activeAdventureInstance: AdventureModeView | null = null;
+  private lastAdventureSummary: AdventureSessionSummary | null = null;
   private isSwitcherOpen: boolean = false;
 
   async init(): Promise<void> {
@@ -310,6 +313,18 @@ class TrailScribeApp {
       this.activeScannerInstance = null;
     }
 
+    // Clean up active sound visualizer/mic if leaving sound screen
+    if (this.previousScreen === 'sound-identification' && this.activeSoundInstance) {
+      this.activeSoundInstance.stop();
+      this.activeSoundInstance = null;
+    }
+
+    // Clean up active adventure timer if leaving adventure screen
+    if (this.previousScreen === 'adventure-mode' && this.activeAdventureInstance) {
+      this.activeAdventureInstance.stop();
+      this.activeAdventureInstance = null;
+    }
+
     const meta = SCREENS[screenId];
     const headerEl = document.getElementById('stitch-header');
     const navEl = document.getElementById('stitch-nav');
@@ -410,7 +425,7 @@ class TrailScribeApp {
           },
           onViewFolio: () => this.navigateTo('field-journal')
         });
-        view.render();
+        await view.render();
         break;
       }
 
@@ -434,6 +449,7 @@ class TrailScribeApp {
         const view = new SoundIdentificationView(container, {
           onAddToJournal: () => this.navigateTo('field-journal')
         });
+        this.activeSoundInstance = view;
         view.render();
         break;
       }
@@ -465,24 +481,36 @@ class TrailScribeApp {
       case 'adventure-mode': {
         const view = new AdventureModeView(container, {
           onSpotSpecimen: () => this.navigateTo('specimen-capture'),
-          onConcludeAdventure: () => this.navigateTo('adventure-complete')
+          onConcludeAdventure: (summary) => {
+            this.lastAdventureSummary = summary;
+            this.navigateTo('adventure-complete');
+          }
         });
+        this.activeAdventureInstance = view;
         view.render();
         break;
       }
 
       case 'adventure-complete': {
-        const view = new AdventureCompleteView(container, {
-          onViewJournal: () => this.navigateTo('field-journal'),
-          onStartAnother: () => this.navigateTo('adventure-mode')
-        });
-        view.render();
+        const view = new AdventureCompleteView(
+          container,
+          {
+            onViewJournal: () => this.navigateTo('field-journal'),
+            onStartAnother: () => this.navigateTo('adventure-mode'),
+            onSelectSpecimen: (specimenId) => {
+              this.selectedSpecimenId = specimenId;
+              this.navigateTo('identification-result');
+            }
+          },
+          this.lastAdventureSummary ?? undefined
+        );
+        await view.render();
         break;
       }
 
       case 'naturalist-profile': {
         const view = new ProfileOutdoorYearView(container);
-        view.render();
+        await view.render();
         break;
       }
     }
@@ -499,7 +527,11 @@ class TrailScribeApp {
         confidence: Math.round((obs.confidenceScore ?? 0.94) * 100),
         locationText: obs.habitat?.split('·')[0]?.trim() || 'Field Sector',
         coordsText: obs.coordinates ? `${obs.coordinates.latitude.toFixed(4)}° N, ${obs.coordinates.longitude.toFixed(4)}° E` : '19.0438° N, 73.0674° E',
-        timeText: obs.readableDate.split('·')[1]?.trim() || 'Today'
+        timeText: obs.readableDate.split('·')[1]?.trim() || 'Today',
+        fieldNotes: obs.fieldNotes,
+        habitat: obs.habitat,
+        kingdomOrGroup: obs.kingdomOrGroup,
+        abundanceCount: obs.abundanceCount
       };
     }
 
