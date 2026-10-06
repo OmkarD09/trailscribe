@@ -5,7 +5,8 @@ import 'fake-indexeddb/auto';
 import { TrailScribeDB } from '../src/storage/db.ts';
 import { DataExporter } from '../src/storage/exporter.ts';
 import { FieldEntityParser } from '../src/runner/parser.ts';
-import type { FieldObservation } from '../src/storage/types.ts';
+import { computeBoundingBox, projectToCanvas } from '../src/utils/geolocation.ts';
+import type { FieldObservation, Coordinates } from '../src/storage/types.ts';
 
 describe('TrailScribe Offline Backend & Data Layer Validation', () => {
   let db: TrailScribeDB;
@@ -201,5 +202,40 @@ describe('TrailScribe Offline Backend & Data Layer Validation', () => {
     assert.ok(lines.length >= 9); // Header + at least 8 records
     assert.equal(lines[0], 'id,date_iso,latitude,longitude,common_name,scientific_name,kingdom,habitat,substrate,count,notes,raw_transcript');
   });
+
+  test('9. GPS Spatial Bounding Box & Topographic Canvas Projection', () => {
+    const coords: Coordinates[] = [
+      { latitude: 19.2288, longitude: 72.9182 }, // Northernmost point
+      { latitude: 18.7618, longitude: 73.3768 }, // Southernmost point
+      { latitude: 18.9553, longitude: 72.8055 }, // Westernmost point
+      { latitude: 19.0438, longitude: 73.0674 }  // Central point
+    ];
+
+    const bounds = computeBoundingBox(coords);
+    assert.ok(bounds.maxLat > 19.2288);
+    assert.ok(bounds.minLat < 18.7618);
+    assert.ok(bounds.maxLon > 73.3768);
+    assert.ok(bounds.minLon < 72.8055);
+
+    // Project northern point vs southern point
+    const northPos = projectToCanvas(coords[0], bounds);
+    const southPos = projectToCanvas(coords[1], bounds);
+
+    // North should be higher up on canvas (smaller yPercent)
+    assert.ok(northPos.yPercent < southPos.yPercent, `Expected north (${northPos.yPercent}) < south (${southPos.yPercent})`);
+
+    // West should be further left on canvas (smaller xPercent)
+    const westPos = projectToCanvas(coords[2], bounds);
+    const eastPos = projectToCanvas(coords[1], bounds);
+    assert.ok(westPos.xPercent < eastPos.xPercent, `Expected west (${westPos.xPercent}) < east (${eastPos.xPercent})`);
+
+    // Verify all positions strictly fall within HUD margin constraints [14, 84] and [22, 76]
+    for (const c of coords) {
+      const p = projectToCanvas(c, bounds);
+      assert.ok(p.xPercent >= 14 && p.xPercent <= 84);
+      assert.ok(p.yPercent >= 22 && p.yPercent <= 76);
+    }
+  });
 });
+
 

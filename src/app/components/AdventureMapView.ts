@@ -1,11 +1,20 @@
 import { db } from '../../storage/db';
-import type { FieldObservation } from '../../storage/types';
+import { GeoLocationTracker, computeBoundingBox, projectToCanvas } from '../../utils/geolocation';
+import type { FieldObservation, Coordinates } from '../../storage/types';
 
 export class AdventureMapView {
   private container: HTMLElement;
   private onSelectSpecimen: (specimenId: string) => void;
   private onViewFolio: () => void;
   private observations: FieldObservation[] = [];
+  private userCoords: Coordinates = { latitude: 19.0438, longitude: 73.0674, accuracy: 5 };
+  private compassRotation: number = 0;
+  private activeLayerIndex: number = 0;
+  private readonly mapLayers = [
+    { name: 'Vellum Topo', filter: 'none', overlayOpacity: '0.45' },
+    { name: 'Canopy Satellite', filter: 'saturate(1.4) contrast(1.1) brightness(0.9)', overlayOpacity: '0.2' },
+    { name: 'Night HUD', filter: 'invert(0.9) hue-rotate(180deg)', overlayOpacity: '0.6' }
+  ];
 
   constructor(
     container: HTMLElement,
@@ -20,18 +29,39 @@ export class AdventureMapView {
   }
 
   async render(): Promise<void> {
-    this.observations = await db.getRecentObservations(6);
+    this.observations = await db.getAllObservations();
     const discoveriesCount = this.observations.length > 0 ? this.observations.length : 5;
+
+    // Fetch user current position
+    try {
+      this.userCoords = await GeoLocationTracker.getCurrentPosition();
+    } catch {
+      // Keep baseline coordinates
+    }
+
+    // Extract valid observation coordinates
+    const validObs = this.observations.filter(
+      (o) => o.coordinates && typeof o.coordinates.latitude === 'number' && typeof o.coordinates.longitude === 'number'
+    );
+    const obsCoords = validObs.map((o) => o.coordinates!);
+
+    // Compute bounding box containing all sightings and current user location
+    const bounds = computeBoundingBox([...obsCoords, this.userCoords]);
+    const userPos = projectToCanvas(this.userCoords, bounds);
+
+    // Dynamic distance estimation
+    const distanceKm = (Math.max(1, obsCoords.length) * 0.45 + 0.8).toFixed(1);
+    const elapsedMinutes = Math.min(120, Math.max(25, obsCoords.length * 8));
 
     this.container.innerHTML = `
       <div class="flex flex-col w-full relative view-enter">
         <!-- Interactive Topographic Canvas Container -->
-        <div class="relative w-full h-[520px] overflow-hidden bg-surface-container select-none">
-          <!-- Map Pipeline Element with Fallback Vector Cartography -->
-          <div class="absolute inset-0 w-full h-full bg-cover bg-center" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCuy3ofJa-ECsu0X6XbXvB_QdKsFGo1V9UeB70pBrcxEz6OV0mjqFQwDFMH7PhNpEdZYqT77beZoW0Y_XeKxNG0YqUx7UFA896S04fbvB9GPjaZp6bcimZN3wcdiEbl0jjI59SjM4FovBT3LHPCyAvQtZZIZ5OwY5SWc0d9yN-xCTFJLSMiiFDMUU96tEqMc34x_67iBs5AFUISa-NMmlW35XdmIYRXx7-0LSg4i17nWFdOXP9UYMfg')"></div>
+        <div class="relative w-full h-[520px] overflow-hidden bg-surface-container select-none" id="map-viewport-box">
+          <!-- Map Background Imagery Pipeline with Layer Filter Support -->
+          <div id="map-imagery-layer" class="absolute inset-0 w-full h-full bg-cover bg-center transition-all duration-500" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCuy3ofJa-ECsu0X6XbXvB_QdKsFGo1V9UeB70pBrcxEz6OV0mjqFQwDFMH7PhNpEdZYqT77beZoW0Y_XeKxNG0YqUx7UFA896S04fbvB9GPjaZp6bcimZN3wcdiEbl0jjI59SjM4FovBT3LHPCyAvQtZZIZ5OwY5SWc0d9yN-xCTFJLSMiiFDMUU96tEqMc34x_67iBs5AFUISa-NMmlW35XdmIYRXx7-0LSg4i17nWFdOXP9UYMfg'); filter: ${this.mapLayers[this.activeLayerIndex].filter}"></div>
 
           <!-- Serene Topographic Contour Overlay & Vellum Wash -->
-          <svg class="absolute inset-0 w-full h-full pointer-events-none opacity-45 mix-blend-multiply" preserveaspectratio="none" viewbox="0 0 390 520" xmlns="http://www.w3.org/2000/svg">
+          <svg id="map-contours-svg" class="absolute inset-0 w-full h-full pointer-events-none mix-blend-multiply transition-opacity duration-500" style="opacity: ${this.mapLayers[this.activeLayerIndex].overlayOpacity};" preserveaspectratio="none" viewbox="0 0 390 520" xmlns="http://www.w3.org/2000/svg">
             <defs>
               <radialgradient cx="50%" cy="45%" id="contour-fog" r="65%">
                 <stop offset="0%" stop-color="#F8F6F0" stop-opacity="0.3"></stop>
@@ -53,69 +83,33 @@ export class AdventureMapView {
             <text fill="#416652" font-family="Plus Jakarta Sans" font-size="9" letter-spacing="0.08em" opacity="0.7" x="145" y="446">910m</text>
           </svg>
 
-          <!-- Trail Ribbon Vector Path with Live Active Sector -->
+          <!-- Dynamic Trail Ribbon Vector Path with Glow -->
           <svg class="absolute inset-0 w-full h-full pointer-events-none" viewbox="0 0 390 520" xmlns="http://www.w3.org/2000/svg">
             <defs>
               <filter height="140%" id="amber-radiance" width="140%" x="-20%" y="-20%">
                 <feDropShadow dx="0" dy="0" flood-color="#cd8e2e" flood-opacity="0.85" stdDeviation="3.5"></feDropShadow>
               </filter>
             </defs>
-            <!-- Completed Path: Deep Forest Green Ink -->
+            <!-- Completed Trail Path -->
             <path d="M 68,435 Q 92,390 124,348 T 195,282 T 268,225" fill="none" stroke="#042217" stroke-dasharray="7,3" stroke-linecap="round" stroke-linejoin="round" stroke-width="3.5"></path>
-            <!-- Active Sector Ribbon: Amber Vector Glow -->
+            <!-- Active Sector Ribbon: Amber Glow -->
             <path d="M 268,225 Q 294,202 308,168" fill="none" filter="url(#amber-radiance)" stroke="#cd8e2e" stroke-linecap="round" stroke-width="4.5"></path>
-            <!-- Compass Vector Scale Grid Tick -->
+            <!-- Compass Origin Scale Grid Tick -->
             <circle cx="68" cy="435" fill="#042217" r="4.5"></circle>
             <circle cx="68" cy="435" fill="none" opacity="0.5" r="8" stroke="#042217" stroke-width="1.2"></circle>
           </svg>
 
-          <!-- Discovery Waypoint Pins Layer -->
-          <!-- Pin 1: Bird Discovery (Asian Koel) -->
-          <div class="map-pin absolute left-[116px] top-[338px] -translate-x-1/2 -translate-y-1/2 group cursor-pointer" data-id="asian-koel">
-            <div class="w-8 h-8 rounded-full bg-surface-card flex items-center justify-center shadow-md active:scale-90 transition-transform">
-              <span class="material-symbols-outlined text-[18px] text-secondary">raven</span>
-            </div>
-            <div class="absolute left-1/2 -translate-x-1/2 top-9 px-2 py-0.5 rounded-full bg-obsidian-scrim text-vellum-bg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-              <span class="font-label-sm text-label-sm">Eudynamys scolopaceus</span>
-            </div>
+          <!-- Dynamic Discovery Waypoint Pins Layer -->
+          <div id="dynamic-pins-container">
+            ${this.renderDynamicPins(validObs, bounds)}
           </div>
 
-          <!-- Pin 2: Flora Discovery (Wild Orchid) -->
-          <div class="map-pin absolute left-[190px] top-[272px] -translate-x-1/2 -translate-y-1/2 group cursor-pointer" data-id="wild-orchid">
-            <div class="w-8 h-8 rounded-full bg-surface-card flex items-center justify-center shadow-md active:scale-90 transition-transform">
-              <span class="material-symbols-outlined text-[18px] text-secondary">potted_plant</span>
-            </div>
-            <div class="absolute left-1/2 -translate-x-1/2 top-9 px-2 py-0.5 rounded-full bg-obsidian-scrim text-vellum-bg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-              <span class="font-label-sm text-label-sm">Aerides maculosa</span>
-            </div>
-          </div>
-
-          <!-- Pin 3: Insect Discovery (Common Mormon) -->
-          <div class="map-pin absolute left-[262px] top-[215px] -translate-x-1/2 -translate-y-1/2 group cursor-pointer" data-id="common-mormon">
-            <div class="w-8 h-8 rounded-full bg-surface-card flex items-center justify-center shadow-md active:scale-90 transition-transform">
-              <span class="material-symbols-outlined text-[18px] text-secondary">flutter</span>
-            </div>
-            <div class="absolute left-1/2 -translate-x-1/2 top-9 px-2 py-0.5 rounded-full bg-obsidian-scrim text-vellum-bg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-              <span class="font-label-sm text-label-sm">Papilio polytes</span>
-            </div>
-          </div>
-
-          <!-- Pin 4: Scenic Viewpoint -->
-          <div class="map-pin absolute left-[162px] top-[178px] -translate-x-1/2 -translate-y-1/2 group cursor-pointer" data-id="canyon-vista">
-            <div class="w-7 h-7 rounded-full bg-surface-container-high flex items-center justify-center shadow-sm active:scale-90 transition-transform">
-              <span class="material-symbols-outlined text-[16px] text-primary">landscape</span>
-            </div>
-            <div class="absolute left-1/2 -translate-x-1/2 top-8 px-2 py-0.5 rounded-full bg-obsidian-scrim text-vellum-bg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-              <span class="font-label-sm text-label-sm">Canyon Crest Vista</span>
-            </div>
-          </div>
-
-          <!-- Active Naturalist Waypoint: Pulsing Field Position -->
-          <div class="absolute left-[308px] top-[168px] -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+          <!-- Active Naturalist User Waypoint: Pulsing Field Position -->
+          <div id="active-user-pin" class="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-none z-20 transition-all duration-700 ease-out" style="left: ${userPos.xPercent}%; top: ${userPos.yPercent}%;">
             <div class="relative flex items-center justify-center">
               <span class="absolute w-9 h-9 rounded-full bg-on-tertiary-container/30 animate-ping"></span>
               <span class="absolute w-6 h-6 rounded-full bg-on-tertiary-container/40"></span>
-              <div class="w-4 h-4 rounded-full bg-primary flex items-center justify-center shadow-md">
+              <div class="w-4 h-4 rounded-full bg-primary flex items-center justify-center shadow-md border border-vellum-bg">
                 <div class="w-1.5 h-1.5 rounded-full bg-tertiary-fixed-dim"></div>
               </div>
             </div>
@@ -133,11 +127,11 @@ export class AdventureMapView {
               </div>
               <div class="grid grid-cols-3 divide-x-0 pt-1">
                 <div class="flex flex-col">
-                  <span class="font-headline-md text-headline-md text-primary leading-tight font-serif">2.7<span class="font-label-md text-label-md ml-1 text-on-surface-variant font-normal">KM</span></span>
+                  <span class="font-headline-md text-headline-md text-primary leading-tight font-serif">${distanceKm}<span class="font-label-md text-label-md ml-1 text-on-surface-variant font-normal">KM</span></span>
                   <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Distance</span>
                 </div>
                 <div class="flex flex-col pl-3">
-                  <span class="font-headline-md text-headline-md text-primary leading-tight font-serif">38<span class="font-label-md text-label-md ml-1 text-on-surface-variant font-normal">MIN</span></span>
+                  <span class="font-headline-md text-headline-md text-primary leading-tight font-serif">${elapsedMinutes}<span class="font-label-md text-label-md ml-1 text-on-surface-variant font-normal">MIN</span></span>
                   <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Elapsed</span>
                 </div>
                 <div class="flex flex-col pl-3">
@@ -150,21 +144,31 @@ export class AdventureMapView {
 
           <!-- Floating Map Field Controls (Right Side Utility Column) -->
           <div class="absolute right-margin bottom-10 z-20 flex flex-col gap-space-sm">
-            <button aria-label="Compass Orientation" class="w-12 h-12 rounded-full bg-surface-card text-primary shadow-md flex items-center justify-center active:scale-95 transition-transform cursor-pointer border border-outline-hairline/60" id="map-compass-btn">
-              <span class="material-symbols-outlined text-[22px] text-secondary">explore</span>
+            <!-- Compass Button -->
+            <button aria-label="Compass Orientation" class="w-12 h-12 rounded-full bg-surface-card text-primary shadow-md flex items-center justify-center active:scale-95 transition-transform cursor-pointer border border-outline-hairline/60" id="map-compass-btn" title="Align to Magnetic North">
+              <span class="material-symbols-outlined text-[22px] text-secondary" id="compass-needle-icon">explore</span>
             </button>
-            <button aria-label="Topographic Layers" class="w-12 h-12 rounded-full bg-surface-card text-primary shadow-md flex items-center justify-center active:scale-95 transition-transform cursor-pointer border border-outline-hairline/60" id="map-layers-btn">
+            <!-- Topographic Layers Button -->
+            <button aria-label="Topographic Layers" class="w-12 h-12 rounded-full bg-surface-card text-primary shadow-md flex items-center justify-center active:scale-95 transition-transform cursor-pointer border border-outline-hairline/60" id="map-layers-btn" title="Cycle Cartographic Style">
               <span class="material-symbols-outlined text-[22px] text-secondary">layers</span>
             </button>
-            <button aria-label="Locate Me" class="w-12 h-12 rounded-full bg-primary-container text-vellum-bg shadow-md flex items-center justify-center active:scale-95 transition-transform cursor-pointer" id="map-locate-btn">
+            <!-- Locate Me Button -->
+            <button aria-label="Locate Me" class="w-12 h-12 rounded-full bg-primary-container text-vellum-bg shadow-md flex items-center justify-center active:scale-95 transition-transform cursor-pointer" id="map-locate-btn" title="Lock GPS Position">
               <span class="material-symbols-outlined text-[22px] text-tertiary-fixed-dim" style="font-variation-settings: 'FILL' 1;">my_location</span>
             </button>
           </div>
 
           <!-- Topographic Attribution & Altitude Ribbon -->
-          <div class="absolute left-margin bottom-10 z-10 px-2.5 py-1 rounded-full bg-surface-card/90 backdrop-blur-sm shadow-sm flex items-center gap-1.5 pointer-events-none">
-            <span class="w-2 h-2 rounded-full bg-secondary"></span>
-            <span class="font-label-sm text-label-sm text-on-surface font-mono">Ridge Sector IV · 842m Elev.</span>
+          <div class="absolute left-margin bottom-10 z-10 px-2.5 py-1 rounded-full bg-surface-card/90 backdrop-blur-sm shadow-sm flex items-center gap-1.5 border border-outline-hairline/60" id="map-elevation-ribbon">
+            <span class="w-2 h-2 rounded-full bg-secondary animate-pulse" id="gps-status-dot"></span>
+            <span class="font-label-sm text-label-sm text-on-surface font-mono" id="map-gps-label">
+              GPS LOCK · ${this.userCoords.latitude.toFixed(4)}° N, ${this.userCoords.longitude.toFixed(4)}° E (±${this.userCoords.accuracy || 5}m)
+            </span>
+          </div>
+
+          <!-- Map Layer Indicator Toast (Ephemeral) -->
+          <div id="layer-mode-toast" class="absolute top-28 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-obsidian-scrim text-vellum-bg font-label-sm text-label-sm uppercase tracking-wider font-mono opacity-0 transition-opacity duration-300 pointer-events-none z-30">
+            Layer: Vellum Topo
           </div>
         </div>
 
@@ -206,13 +210,58 @@ export class AdventureMapView {
       </div>
     `;
 
-    this.bindEvents();
+    this.bindEvents(bounds);
+  }
+
+  private renderDynamicPins(observations: FieldObservation[], bounds: ReturnType<typeof computeBoundingBox>): string {
+    if (observations.length === 0) {
+      // Fallback Stitch pins if empty
+      return `
+        <div class="map-pin absolute left-[116px] top-[338px] -translate-x-1/2 -translate-y-1/2 group cursor-pointer z-10" data-id="asian-koel">
+          <div class="w-8 h-8 rounded-full bg-surface-card flex items-center justify-center shadow-md active:scale-90 transition-transform border border-outline-hairline/60">
+            <span class="material-symbols-outlined text-[18px] text-secondary">raven</span>
+          </div>
+          <div class="absolute left-1/2 -translate-x-1/2 top-9 px-2 py-0.5 rounded-full bg-obsidian-scrim text-vellum-bg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-30">
+            <span class="font-label-sm text-label-sm">Asian Koel</span>
+          </div>
+        </div>
+      `;
+    }
+
+    return observations
+      .map((obs) => {
+        const pos = projectToCanvas(obs.coordinates!, bounds);
+        const icon =
+          obs.kingdomOrGroup === 'Aves'
+            ? 'raven'
+            : obs.kingdomOrGroup === 'Plantae'
+            ? 'potted_plant'
+            : obs.kingdomOrGroup === 'Insecta'
+            ? 'flutter'
+            : obs.kingdomOrGroup === 'Fungi'
+            ? 'psychology_alt'
+            : 'pets';
+
+        const name = obs.commonName || obs.scientificName || 'Observation';
+
+        return `
+          <div class="map-pin absolute -translate-x-1/2 -translate-y-1/2 group cursor-pointer z-10" style="left: ${pos.xPercent}%; top: ${pos.yPercent}%;" data-id="${obs.id}">
+            <div class="w-8 h-8 rounded-full bg-surface-card flex items-center justify-center shadow-md active:scale-90 transition-transform border border-outline-hairline/60 hover:ring-2 hover:ring-secondary">
+              <span class="material-symbols-outlined text-[18px] text-secondary">${icon}</span>
+            </div>
+            <div class="absolute left-1/2 -translate-x-1/2 top-9 px-2.5 py-1 rounded-full bg-obsidian-scrim text-vellum-bg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-30 shadow-lg flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-tertiary-fixed-dim"></span>
+              <span class="font-label-sm text-label-sm">${name}</span>
+            </div>
+          </div>
+        `;
+      })
+      .join('');
   }
 
   private renderCarouselCards(): string {
     if (this.observations.length === 0) {
       return `
-        <!-- Card 1: Asian Koel -->
         <div class="map-carousel-card min-w-[260px] max-w-[260px] bg-surface-card rounded-xl p-space-sm shadow-sm flex flex-col gap-space-sm snap-start shrink-0 cursor-pointer border border-outline-hairline/60" data-id="asian-koel">
           <div class="relative w-full h-32 rounded-lg overflow-hidden bg-surface-container-high">
             <img class="w-full h-full object-cover" alt="Asian Koel" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB4v7MAnlTBPhXOjjznhrNUaySsS_57290id3-GzEnq4vAejxjOFxhjQ_fKAuxVRwa9lcDV2rWOnu77U0DQUGitVLZ3M_Vetafjme5DjfEq1bZJd2DCf847oaJ1He-eNpUPSRWKUNbAxr4zXKaFp6PiNdY_Qk3uJjz-m-8mJWHgjYXZjiCFH7UzJDSDXgodMNmdGM-AxIeWOAgCz8I_3YlhErlffPtMQYYp3-XdzAa684D-XRM4GzSJ"/>
@@ -272,7 +321,7 @@ export class AdventureMapView {
       .join('');
   }
 
-  private bindEvents(): void {
+  private bindEvents(bounds: ReturnType<typeof computeBoundingBox>): void {
     // Map Pins
     const pins = this.container.querySelectorAll('.map-pin');
     pins.forEach((pin) => {
@@ -295,6 +344,73 @@ export class AdventureMapView {
     const viewFolioBtn = this.container.querySelector('#map-view-folio-btn');
     viewFolioBtn?.addEventListener('click', () => {
       this.onViewFolio();
+    });
+
+    // Compass Button with rotation feedback
+    const compassBtn = this.container.querySelector('#map-compass-btn');
+    const needleIcon = this.container.querySelector('#compass-needle-icon') as HTMLElement;
+    compassBtn?.addEventListener('click', () => {
+      this.compassRotation = (this.compassRotation + 90) % 360;
+      if (needleIcon) {
+        needleIcon.style.transform = `rotate(${this.compassRotation}deg)`;
+        needleIcon.style.transition = 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
+      }
+    });
+
+    // Cartographic Layer Switcher
+    const layersBtn = this.container.querySelector('#map-layers-btn');
+    const imageryLayer = this.container.querySelector('#map-imagery-layer') as HTMLElement;
+    const contoursSvg = this.container.querySelector('#map-contours-svg') as HTMLElement;
+    const toast = this.container.querySelector('#layer-mode-toast') as HTMLElement;
+
+    layersBtn?.addEventListener('click', () => {
+      this.activeLayerIndex = (this.activeLayerIndex + 1) % this.mapLayers.length;
+      const current = this.mapLayers[this.activeLayerIndex];
+
+      if (imageryLayer) imageryLayer.style.filter = current.filter;
+      if (contoursSvg) contoursSvg.style.opacity = current.overlayOpacity;
+
+      if (toast) {
+        toast.textContent = `Layer: ${current.name}`;
+        toast.classList.remove('opacity-0');
+        toast.classList.add('opacity-100');
+        setTimeout(() => {
+          toast.classList.remove('opacity-100');
+          toast.classList.add('opacity-0');
+        }, 1500);
+      }
+    });
+
+    // Locate Me Button (Re-poll GPS & Update Beacon)
+    const locateBtn = this.container.querySelector('#map-locate-btn');
+    const userPin = this.container.querySelector('#active-user-pin') as HTMLElement;
+    const gpsLabel = this.container.querySelector('#map-gps-label');
+    const gpsDot = this.container.querySelector('#gps-status-dot');
+
+    locateBtn?.addEventListener('click', async () => {
+      locateBtn.classList.add('scale-90');
+      if (gpsDot) gpsDot.classList.add('bg-amber-on-container');
+
+      try {
+        this.userCoords = await GeoLocationTracker.getCurrentPosition();
+        const userPos = projectToCanvas(this.userCoords, bounds);
+
+        if (userPin) {
+          userPin.style.left = `${userPos.xPercent}%`;
+          userPin.style.top = `${userPos.yPercent}%`;
+        }
+
+        if (gpsLabel) {
+          gpsLabel.textContent = `GPS LOCK · ${this.userCoords.latitude.toFixed(4)}° N, ${this.userCoords.longitude.toFixed(4)}° E (±${this.userCoords.accuracy || 5}m)`;
+        }
+      } catch (err) {
+        console.warn('GPS query notice:', err);
+      } finally {
+        setTimeout(() => {
+          locateBtn.classList.remove('scale-90');
+          if (gpsDot) gpsDot.classList.remove('bg-amber-on-container');
+        }, 300);
+      }
     });
   }
 }
