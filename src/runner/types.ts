@@ -43,6 +43,14 @@ export interface ExpeditionDispatchResult {
   modelUsed: string;
 }
 
+export interface GemmaQueryResult {
+  text: string;
+  thoughts?: string;
+  latencyMs: number;
+  modelUsed: string;
+  tokensUsed?: number;
+}
+
 export interface ModelRunnerInterface {
   readonly id: string;
   readonly name: string;

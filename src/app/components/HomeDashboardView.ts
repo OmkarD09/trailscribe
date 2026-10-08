@@ -7,6 +7,7 @@ export class HomeDashboardView {
   private onSelectSpecimen: (specimenId: string) => void;
   private onOpenProfile: () => void;
   private onOpenMap?: () => void;
+  private onOpenGemmaLab?: () => void;
 
   constructor(
     container: HTMLElement,
@@ -16,6 +17,7 @@ export class HomeDashboardView {
       onSelectSpecimen: (specimenId: string) => void;
       onOpenProfile: () => void;
       onOpenMap?: () => void;
+      onOpenGemmaLab?: () => void;
     }
   ) {
     this.container = container;
@@ -24,6 +26,7 @@ export class HomeDashboardView {
     this.onSelectSpecimen = callbacks.onSelectSpecimen;
     this.onOpenProfile = callbacks.onOpenProfile;
     this.onOpenMap = callbacks.onOpenMap;
+    this.onOpenGemmaLab = callbacks.onOpenGemmaLab;
   }
 
   async render(): Promise<void> {
@@ -43,6 +46,43 @@ export class HomeDashboardView {
           <div class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-secondary-container text-on-secondary-container">
             <span class="material-symbols-outlined text-[15px]">nest_farsight_weather</span>
             <span class="font-label-sm text-label-sm font-semibold tracking-tight">AQI 48 Good</span>
+          </div>
+        </section>
+
+        <!-- Google Gemma 2:2B Edge Intelligence Hero Showcase Card (Hackathon Problem Statement) -->
+        <section class="relative overflow-hidden rounded-xl bg-gradient-to-br from-surface-card via-surface-card-subtle to-surface-card p-3.5 border-2 border-primary/20 shadow-sm flex flex-col gap-2.5">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-lg bg-primary-container text-vellum-bg flex items-center justify-center shadow-xs">
+                <span class="material-symbols-outlined text-[18px] text-tertiary-fixed-dim">psychology</span>
+              </div>
+              <div class="flex flex-col min-w-0">
+                <span class="text-[9px] font-mono uppercase tracking-widest text-secondary font-bold">POWERED BY GOOGLE GEMMA 2:2B</span>
+                <span class="text-[13.5px] font-bold text-primary truncate font-serif leading-tight">Edge Naturalist Intelligence</span>
+              </div>
+            </div>
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase bg-emerald-950/40 text-emerald-800 border border-emerald-600/40">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
+              ACTIVE
+            </span>
+          </div>
+
+          <p class="text-[11.5px] text-on-surface-variant leading-relaxed">
+            Running Google Gemma on-device for taxonomic entity extraction (NER), forager toxicity warnings, and Humboldtian expedition literature with zero cloud dependence.
+          </p>
+
+          <div class="flex items-center justify-between pt-1 border-t border-outline-hairline/40">
+            <div class="flex items-center gap-2 text-[10px] font-mono text-secondary font-semibold">
+              <span>2.6B Params</span>
+              <span>•</span>
+              <span>Sub-Second</span>
+              <span>•</span>
+              <span>100% Private</span>
+            </div>
+            <button id="open-gemma-lab-hero-btn" class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary text-vellum-bg text-[11px] font-semibold cursor-pointer active:scale-95 transition-all shadow-xs hover:opacity-90">
+              <span>Open Gemma Lab</span>
+              <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+            </button>
           </div>
         </section>
 
@@ -237,6 +277,12 @@ export class HomeDashboardView {
         </div>
       </div>
     `;
+
+    // Bind Gemma Lab Hero Button
+    const gemmaLabHeroBtn = this.container.querySelector('#open-gemma-lab-hero-btn');
+    gemmaLabHeroBtn?.addEventListener('click', () => {
+      this.onOpenGemmaLab?.();
+    });
 
     // Bind Start Adventure
     const startBtn = this.container.querySelector('#start-adventure-btn');

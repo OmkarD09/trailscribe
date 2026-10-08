@@ -103,14 +103,17 @@ export class AdventureModeView {
           </div>
 
           <!-- Wilderness Solar Ephemeris & Dusk Countdown HUD (Ranger Dave O'Connor SAR Feature) -->
-          <div class="bg-surface-card rounded-xl p-space-md shadow-sm border border-outline-hairline/60 flex flex-col gap-2.5 transition-all" id="ephemeris-hud-card">
+          <div class="bg-surface-card rounded-xl p-space-md shadow-sm border border-outline-hairline/60 flex flex-col gap-2.5 transition-all cursor-pointer hover:border-amber-500/70 active:scale-[0.99] group" id="ephemeris-hud-card" title="Tap for Search & Rescue Dusk Timeline and Turnaround Deadline">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2.5 min-w-0">
-                <div class="w-9 h-9 rounded-full bg-amber-container text-amber-on-container flex items-center justify-center shrink-0">
+                <div class="w-9 h-9 rounded-full bg-amber-container text-amber-on-container flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
                   <span class="material-symbols-outlined text-[20px]" id="ephem-icon">${ephem.iconName}</span>
                 </div>
                 <div class="flex flex-col min-w-0">
-                  <span class="text-[9.5px] font-mono uppercase tracking-wider text-tertiary-fixed-dim font-bold">SOLAR EPHEMERIS · DUSK GAUGE</span>
+                  <div class="flex items-center gap-1">
+                    <span class="text-[9.5px] font-mono uppercase tracking-wider text-tertiary-fixed-dim font-bold">SOLAR EPHEMERIS · DUSK GAUGE</span>
+                    <span class="material-symbols-outlined text-[13px] text-secondary opacity-70 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all">chevron_right</span>
+                  </div>
                   <span class="font-title-md text-title-md text-primary font-bold truncate leading-tight mt-0.5" id="ephem-remaining-label">
                     ${ephem.remainingMinutes > 0 ? `${ephem.remainingHoursText} to Sunset` : ephem.remainingHoursText}
                   </span>
@@ -562,7 +565,149 @@ export class AdventureModeView {
     }
   }
 
+  private openEphemerisModal(): void {
+    const existing = document.getElementById('ephemeris-safety-modal');
+    if (existing) existing.remove();
+
+    const lat = this.currentCoordinates?.latitude || this.trailheadOrigin?.latitude || 19.0438;
+    const lon = this.currentCoordinates?.longitude || this.trailheadOrigin?.longitude || 73.0674;
+    const ephem = SolarEphemerisCalculator.calculate(lat, lon);
+
+    // Compute SAR turnaround time:
+    const returnDistMeters = this.distanceToOriginMeters;
+    const walkSpeedMpm = 58; // 3.5 km/h rugged terrain walking speed
+    const walkTimeMinutes = Math.max(5, Math.ceil(returnDistMeters / walkSpeedMpm));
+    const safetyBufferMinutes = 15;
+    const totalRequiredMinutes = walkTimeMinutes + safetyBufferMinutes;
+
+    const deadlineMs = ephem.civilDuskDate.getTime() - totalRequiredMinutes * 60 * 1000;
+    const deadlineDate = new Date(deadlineMs);
+    const deadlineTimeString = deadlineDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    const modal = document.createElement('div');
+    modal.id = 'ephemeris-safety-modal';
+    modal.className = 'fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-3 view-enter';
+
+    modal.innerHTML = `
+      <div class="bg-surface-card rounded-2xl w-full max-w-md p-space-md shadow-2xl border border-outline-hairline/60 flex flex-col gap-3.5 max-h-[90vh] overflow-y-auto">
+        <!-- Header -->
+        <div class="flex items-center justify-between pb-2 border-b border-outline-hairline/60">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-amber-container text-amber-on-container flex items-center justify-center">
+              <span class="material-symbols-outlined text-[18px]">wb_twilight</span>
+            </div>
+            <div class="flex flex-col">
+              <span class="text-[9.5px] font-mono uppercase tracking-widest text-secondary font-bold">Ranger SAR Protocol</span>
+              <h3 class="text-base font-serif font-bold text-primary leading-tight">Wilderness Dusk & Ephemeris Schedule</h3>
+            </div>
+          </div>
+          <button id="close-ephem-modal-btn" class="w-7 h-7 rounded-full bg-surface-card-subtle flex items-center justify-center text-primary hover:bg-surface-container cursor-pointer">
+            <span class="material-symbols-outlined text-[16px]">close</span>
+          </button>
+        </div>
+
+        <!-- Coordinates & Solar Status -->
+        <div class="flex items-center justify-between text-xs font-mono bg-surface-card-subtle p-2.5 rounded-xl border border-outline-hairline/60">
+          <span class="text-secondary flex items-center gap-1">
+            <span class="material-symbols-outlined text-[14px]">pin_drop</span>
+            ${lat.toFixed(4)}° N, ${lon.toFixed(4)}° E
+          </span>
+          <span class="font-bold text-amber-700 uppercase">${ephem.statusBadge}</span>
+        </div>
+
+        <!-- Solar Timeline Milestones -->
+        <div class="flex flex-col gap-2 bg-surface-container-low p-3 rounded-xl border border-outline-hairline/40">
+          <span class="text-[10.5px] font-mono uppercase tracking-wider text-secondary font-bold">Today's Solar Horizon</span>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div class="flex items-center gap-2 p-1.5 rounded-lg bg-surface-card">
+              <span class="material-symbols-outlined text-amber-500 text-[18px]">wb_sunny</span>
+              <div class="flex flex-col">
+                <span class="text-[10px] text-secondary">Solar Noon (Peak)</span>
+                <span class="font-bold text-primary font-mono">12:20 PM</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 p-1.5 rounded-lg bg-surface-card">
+              <span class="material-symbols-outlined text-amber-600 text-[18px]">flare</span>
+              <div class="flex flex-col">
+                <span class="text-[10px] text-secondary">Golden Hour</span>
+                <span class="font-bold text-primary font-mono">05:30 PM</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 p-1.5 rounded-lg bg-surface-card border border-amber-500/40">
+              <span class="material-symbols-outlined text-orange-600 text-[18px]">wb_twilight</span>
+              <div class="flex flex-col">
+                <span class="text-[10px] text-secondary font-bold">Official Sunset</span>
+                <span class="font-bold text-orange-700 font-mono">${ephem.sunsetTimeString}</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 p-1.5 rounded-lg bg-surface-card border border-red-500/40">
+              <span class="material-symbols-outlined text-red-600 text-[18px]">dark_mode</span>
+              <div class="flex flex-col">
+                <span class="text-[10px] text-secondary font-bold">Civil Dusk (Zero Light)</span>
+                <span class="font-bold text-red-700 font-mono">${ephem.civilDuskTimeString}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SAR Turnaround Safety Calculator -->
+        <div class="bg-amber-950/10 border-2 border-amber-600/50 rounded-xl p-3 flex flex-col gap-2">
+          <div class="flex items-center gap-1.5 text-amber-900 font-bold text-xs uppercase font-mono">
+            <span class="material-symbols-outlined text-[16px] text-amber-700">emergency</span>
+            <span>Search & Rescue Safe Turnaround</span>
+          </div>
+          <p class="text-xs text-on-surface leading-relaxed">
+            You are currently <strong>${returnDistMeters}m</strong> from the trailhead origin. At average wilderness hiking pace (58 m/min), return transit requires <strong>~${walkTimeMinutes} minutes</strong> plus a 15-minute safety margin.
+          </p>
+          <div class="bg-surface-card p-2 rounded-lg flex items-center justify-between border border-amber-700/30">
+            <span class="text-xs font-mono text-secondary">Mandatory Turnaround By:</span>
+            <span class="text-sm font-mono font-bold text-red-700">${deadlineTimeString}</span>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex items-center gap-2 pt-1">
+          <button id="test-dusk-alarm-btn" class="flex-1 py-2 px-3 rounded-xl bg-amber-container text-amber-on-container font-mono text-xs font-bold flex items-center justify-center gap-1 hover:bg-amber-200 active:scale-95 transition-all cursor-pointer">
+            <span class="material-symbols-outlined text-[15px]">notifications_active</span>
+            <span>Test Dusk Alert</span>
+          </button>
+          <button id="dismiss-ephem-modal-btn" class="py-2 px-4 rounded-xl bg-surface-card border border-outline-hairline/80 text-primary font-mono text-xs font-semibold hover:bg-surface-container active:scale-95 transition-all cursor-pointer">
+            Close
+          </button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    modal.querySelector('#close-ephem-modal-btn')?.addEventListener('click', () => modal.remove());
+    modal.querySelector('#dismiss-ephem-modal-btn')?.addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) modal.remove();
+    });
+
+    modal.querySelector('#test-dusk-alarm-btn')?.addEventListener('click', () => {
+      AudioFeedback.playTone('save');
+      if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+        try { navigator.vibrate([150, 100, 250]); } catch {}
+      }
+      const testBtn = modal.querySelector('#test-dusk-alarm-btn');
+      if (testBtn) {
+        testBtn.innerHTML = '<span class="material-symbols-outlined text-[15px]">check_circle</span><span>Chime & Vibration Triggered!</span>';
+        setTimeout(() => {
+          if (testBtn) testBtn.innerHTML = '<span class="material-symbols-outlined text-[15px]">notifications_active</span><span>Test Dusk Alert</span>';
+        }, 2000);
+      }
+    });
+  }
+
   private bindEvents(): void {
+    // Ephemeris HUD Tap to open SAR modal
+    const ephemCard = this.container.querySelector('#ephemeris-hud-card');
+    ephemCard?.addEventListener('click', () => {
+      this.openEphemerisModal();
+    });
+
     // Navigation to Map triggers
     const viewMapStripBtn = this.container.querySelector('#view-map-strip-btn');
     viewMapStripBtn?.addEventListener('click', (e) => {

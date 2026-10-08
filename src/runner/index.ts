@@ -15,6 +15,10 @@ export function getModelRunner(): ModelRunnerInterface {
   return currentRunner;
 }
 
+export function getGemmaRunner(): GemmaRunner {
+  return gemmaInstance;
+}
+
 export function setModelRunner(runner: ModelRunnerInterface): void {
   currentRunner = runner;
 }

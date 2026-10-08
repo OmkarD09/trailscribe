@@ -11,6 +11,7 @@ import { AdventureMapView } from './app/components/AdventureMapView';
 import { AdventureModeView, type AdventureSessionSummary } from './app/components/AdventureModeView';
 import { AdventureCompleteView } from './app/components/AdventureCompleteView';
 import { ProfileOutdoorYearView } from './app/components/ProfileOutdoorYearView';
+import { GemmaLabView } from './app/components/GemmaLabView';
 
 export type ScreenId =
   | 'splash-welcome'
@@ -22,7 +23,8 @@ export type ScreenId =
   | 'field-journal'
   | 'adventure-mode'
   | 'adventure-complete'
-  | 'naturalist-profile';
+  | 'naturalist-profile'
+  | 'gemma-lab';
 
 interface ScreenMeta {
   id: ScreenId;
@@ -113,6 +115,14 @@ const SCREENS: Record<ScreenId, ScreenMeta> = {
     hasNav: true,
     headerTitle: 'Naturalist Profile',
     isSecondary: false
+  },
+  'gemma-lab': {
+    id: 'gemma-lab',
+    name: '11. Gemma Naturalist Lab',
+    hasHeader: false,
+    hasNav: true,
+    headerTitle: 'Gemma 2:2B AI Lab',
+    isSecondary: true
   }
 };
 
@@ -150,11 +160,16 @@ class TrailScribeApp {
               <h1 class="text-[16px] font-bold text-primary truncate leading-tight font-serif mt-0.5" id="header-title-text">Field Hub</h1>
             </div>
           </div>
-          <div class="flex items-center gap-2 shrink-0">
-            <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-obsidian-scrim text-vellum-bg cursor-pointer hover:opacity-90 active:scale-95 transition-all" id="header-status-pill" title="Stitch Screen Matrix">
-              <span class="w-1.5 h-1.5 rounded-full bg-tertiary-fixed-dim animate-pulse"></span>
-              <span class="text-[10px] tracking-wider uppercase font-bold text-vellum-bg">Offline AI</span>
-            </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <!-- Offline Sync Status Badge Pill (Requested by Elena & Kavi) -->
+            <button class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase border border-outline-hairline/80 bg-surface-card-subtle text-secondary hover:bg-surface-container active:scale-95 transition-all cursor-pointer shadow-2xs" id="header-sync-pill" title="Tap to sync local records with cloud">
+              <span class="material-symbols-outlined text-[13px] text-emerald-600" id="header-sync-icon">cloud_done</span>
+              <span id="header-sync-label">Synced</span>
+            </button>
+            <button class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary-container text-vellum-bg cursor-pointer hover:bg-secondary active:scale-95 transition-all shadow-xs border border-tertiary-fixed-dim/40" id="header-status-pill" title="Open Google Gemma AI Laboratory">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span class="text-[10px] tracking-wider uppercase font-bold text-vellum-bg">Gemma AI</span>
+            </button>
             <button class="w-9 h-9 rounded-full p-0.5 flex items-center justify-center cursor-pointer hover:opacity-90 active:scale-95 transition-transform" id="header-profile-btn" aria-label="Naturalist Profile">
               <img alt="Profile" class="w-7 h-7 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBmrP4X-EhK77vuSbVHvx4HHZFwzrPVQFyfECy4Heo5B8jqaJtGZvT9-AzEI9T9CFRjoCe4TmBXZAHu9rHJmrFzJAx34apRTWVsZJFFa1LuAgQCFesHb_GouVnlEf1dOqfp_dLnwlMfDgsp_XVRYyM51rGsw64pZiXitM7WAf-9iBTLy3-OvL2lSOKIFTcf-8zS3fbsgRvxeXrM0NSUpYCFxqBpLbJ8JC2TaEmJKTwKzX5yztS8w6Ay"/>
             </button>
@@ -231,6 +246,7 @@ class TrailScribeApp {
       if (clean === 'nature-scanner' || clean === 'scanner' || clean === 'camera') return 'specimen-capture';
       if (clean === 'map') return 'offline-map';
       if (clean === 'journal' || clean === 'folio') return 'field-journal';
+      if (clean === 'gemma' || clean === 'gemma-lab' || clean === 'lab' || clean === 'ai') return 'gemma-lab';
       if (clean && SCREENS[clean as ScreenId]) return clean as ScreenId;
       return 'field-hub';
     };
@@ -259,10 +275,25 @@ class TrailScribeApp {
       this.navigateTo('naturalist-profile');
     });
 
-    // Offline Pill in header (toggles matrix)
+    // Gemma AI Pill in header (opens Gemma Laboratory directly)
     const statusPill = document.getElementById('header-status-pill');
     statusPill?.addEventListener('click', () => {
-      this.toggleScreenMatrix();
+      this.navigateTo('gemma-lab');
+    });
+
+    // Offline Cloud Sync Pill in header (Requested by Elena Rostova & Dr. Kavi Patel)
+    const syncPill = document.getElementById('header-sync-pill');
+    syncPill?.addEventListener('click', async () => {
+      syncPill.classList.add('scale-95');
+      const res = await db.syncAllPending();
+      await this.updateSyncBadge();
+      setTimeout(() => syncPill.classList.remove('scale-95'), 200);
+
+      this.showToast(
+        res.syncedCount > 0 
+          ? `✅ Synced ${res.syncedCount} offline record${res.syncedCount > 1 ? 's' : ''} to Cloud Hub`
+          : `☁️ All ${res.totalCount} records safely synced (Offline-First)`
+      );
     });
 
     // Bottom Navigation Tabs
@@ -304,6 +335,45 @@ class TrailScribeApp {
         }
       });
     });
+  }
+
+  private async updateSyncBadge(): Promise<void> {
+    const pill = document.getElementById('header-sync-pill');
+    const icon = document.getElementById('header-sync-icon');
+    const label = document.getElementById('header-sync-label');
+    if (!pill || !icon || !label) return;
+
+    try {
+      const pending = await db.getPendingSyncCount();
+      if (pending > 0) {
+        pill.className = 'inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase border border-amber-600/70 bg-amber-950/80 text-amber-200 hover:bg-amber-900 active:scale-95 transition-all cursor-pointer shadow-2xs animate-pulse';
+        icon.textContent = 'cloud_sync';
+        icon.className = 'material-symbols-outlined text-[13px] text-amber-400';
+        label.textContent = `${pending} Pending`;
+      } else {
+        pill.className = 'inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase border border-outline-hairline/80 bg-surface-card-subtle text-secondary hover:bg-surface-container active:scale-95 transition-all cursor-pointer shadow-2xs';
+        icon.textContent = 'cloud_done';
+        icon.className = 'material-symbols-outlined text-[13px] text-emerald-600';
+        label.textContent = 'Synced';
+      }
+    } catch {}
+  }
+
+  private showToast(msg: string): void {
+    const existing = document.getElementById('global-app-toast');
+    if (existing) existing.remove();
+
+    const toast = document.createElement('div');
+    toast.id = 'global-app-toast';
+    toast.className = 'fixed top-16 left-1/2 -translate-x-1/2 z-[100] px-4 py-2 rounded-full bg-obsidian-scrim/95 backdrop-blur-md text-vellum-bg text-xs font-mono font-bold shadow-xl border border-white/20 transition-all duration-300 pointer-events-none flex items-center gap-1.5 animate-bounce';
+    toast.textContent = msg;
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+      toast.classList.remove('animate-bounce');
+      toast.classList.add('opacity-0');
+      setTimeout(() => toast.remove(), 400);
+    }, 2400);
   }
 
   private toggleScreenMatrix(force?: boolean): void {
@@ -411,6 +481,7 @@ class TrailScribeApp {
 
     // Render Target Screen
     this.renderScreen(screenId, viewportEl);
+    this.updateSyncBadge();
   }
 
   public navigateBack(): void {
@@ -441,7 +512,8 @@ class TrailScribeApp {
             this.selectedSpecimenId = specimenId;
             this.navigateTo('identification-result');
           },
-          onOpenProfile: () => this.navigateTo('naturalist-profile')
+          onOpenProfile: () => this.navigateTo('naturalist-profile'),
+          onOpenGemmaLab: () => this.navigateTo('gemma-lab')
         });
         await view.render();
         break;
@@ -546,6 +618,14 @@ class TrailScribeApp {
       case 'naturalist-profile': {
         const view = new ProfileOutdoorYearView(container);
         await view.render();
+        break;
+      }
+
+      case 'gemma-lab': {
+        const view = new GemmaLabView(container, {
+          onClose: () => this.navigateBack()
+        });
+        view.render();
         break;
       }
     }

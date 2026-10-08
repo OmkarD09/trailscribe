@@ -44,6 +44,20 @@ export class TrailScribeDB extends Dexie {
     return await this.observations.count();
   }
 
+  async getPendingSyncCount(): Promise<number> {
+    const all = await this.getAllObservations();
+    return all.filter((o) => !o.synced).length;
+  }
+
+  async syncAllPending(): Promise<{ syncedCount: number; totalCount: number }> {
+    const all = await this.getAllObservations();
+    const pending = all.filter((o) => !o.synced);
+    for (const item of pending) {
+      await this.updateObservation(item.id, { synced: true });
+    }
+    return { syncedCount: pending.length, totalCount: all.length };
+  }
+
   async searchAndFilter(options?: { category?: string; query?: string }): Promise<FieldObservation[]> {
     let all = await this.getAllObservations();
 

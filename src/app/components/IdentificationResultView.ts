@@ -125,16 +125,14 @@ export class IdentificationResultView {
         <section class="px-margin pt-space-sm" id="toxicity-alert-section">
           <div class="relative rounded-xl p-space-md shadow-md overflow-hidden flex flex-col gap-2.5 border-2 ${
             toxicity.severity === 'DEADLY'
-              ? 'bg-red-950/95 text-red-100 border-red-500'
+              ? 'bg-red-950/95 text-red-100 border-red-500 animate-pulse'
               : toxicity.severity === 'POISONOUS'
               ? 'bg-amber-950/95 text-amber-100 border-amber-500'
               : 'bg-yellow-950/95 text-yellow-100 border-yellow-600'
           }">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2">
-                <span class="material-symbols-outlined text-[24px] ${
-                  toxicity.severity === 'DEADLY' ? 'text-red-400 animate-pulse' : 'text-amber-400'
-                }">${toxicity.iconName}</span>
+                <span class="text-[22px]">${toxicity.severity === 'DEADLY' ? '☠️' : '⚠️'}</span>
                 <span class="font-label-sm text-[11px] uppercase tracking-wider font-bold">${toxicity.title}</span>
               </div>
               <span class="px-2.5 py-0.5 rounded-full text-[9.5px] font-mono font-bold tracking-widest uppercase bg-black/50 border border-white/20">
@@ -146,6 +144,18 @@ export class IdentificationResultView {
               ${toxicity.warningSummary}
             </p>
 
+            <!-- Prominent Lookalike Warning Box -->
+            <div class="bg-red-950/60 rounded-lg p-2.5 flex flex-col gap-1 text-[11.5px] border border-red-500/40">
+              <div class="flex items-center gap-1.5 text-red-300 font-mono font-bold text-[10px] uppercase">
+                <span class="material-symbols-outlined text-[14px]">compare_arrows</span>
+                <span>CRITICAL LOOKALIKE DANGER:</span>
+              </div>
+              <p class="text-white/90 leading-tight">
+                ${toxicity.lookalikeRisk}
+              </p>
+            </div>
+
+            <!-- Toxin Breakdown & Field Safety -->
             <div class="bg-black/40 rounded-lg p-2.5 flex flex-col gap-1.5 text-[11.5px] border border-white/10 mt-0.5">
               ${
                 toxicity.toxinTypes.length > 0
@@ -158,18 +168,37 @@ export class IdentificationResultView {
                   : ''
               }
               <div class="flex items-baseline gap-1.5">
-                <span class="text-white/60 uppercase font-mono text-[10px] shrink-0 font-bold">Lookalike Risk:</span>
-                <span class="text-white/90">${toxicity.lookalikeRisk}</span>
+                <span class="text-white/60 uppercase font-mono text-[10px] shrink-0 font-bold">Clinical Symptoms:</span>
+                <span class="text-white/80">${toxicity.symptoms}</span>
               </div>
               <div class="flex items-baseline gap-1.5 pt-1 border-t border-white/10">
-                <span class="text-red-300 font-bold uppercase font-mono text-[10px] shrink-0">Field Safety:</span>
+                <span class="text-red-300 font-bold uppercase font-mono text-[10px] shrink-0">Field Safety Rule:</span>
                 <span class="text-red-200 font-semibold">${toxicity.safetyGuidance}</span>
               </div>
+            </div>
+
+            <!-- Emergency Protocol Pill -->
+            <div class="flex items-center justify-between text-[10px] font-mono text-white/70 pt-0.5">
+              <span>Wilderness Poison Control: 1-800-222-1222</span>
+              <span class="text-amber-300 font-bold">NEVER INGEST</span>
             </div>
           </div>
         </section>
         `
-            : ''
+            : `
+        <!-- Reassuring Non-Toxic Botanical/Fauna Badge -->
+        <section class="px-margin pt-space-xs">
+          <div class="bg-surface-card rounded-xl p-2.5 px-3 shadow-xs border border-emerald-600/30 flex items-center justify-between gap-2 text-xs">
+            <div class="flex items-center gap-2 text-emerald-800 font-medium">
+              <span class="material-symbols-outlined text-[17px] text-emerald-600">verified</span>
+              <span>No Acute Contact or Ingestion Toxins Recorded</span>
+            </div>
+            <span class="text-[9.5px] font-mono uppercase text-secondary font-bold bg-surface-card-subtle px-2 py-0.5 rounded-full border border-outline-hairline/60">
+              Forager Safe
+            </span>
+          </div>
+        </section>
+        `
         }
 
         <!-- Editorial Did You Know Highlight -->
@@ -470,6 +499,7 @@ export class IdentificationResultView {
       try {
         if (runner.queryNaturalistContext) {
           const res = await runner.queryNaturalistContext(cName, sName);
+          if (runnerModeEl && res.modelUsed) runnerModeEl.textContent = `Engine: ${res.modelUsed}`;
           if (nativeStatusEl && res.nativeStatus) nativeStatusEl.textContent = res.nativeStatus;
           if (foragingNotesEl && res.foragingNotes) foragingNotesEl.textContent = res.foragingNotes;
           if (seasonalIndicatorsEl && res.seasonalIndicators) seasonalIndicatorsEl.textContent = res.seasonalIndicators;
