@@ -1,6 +1,6 @@
 # 🐝 MiroFish-Inspired 100-Agent Swarm Simulation Benchmark Report
 
-**Execution Timestamp:** 2026-10-06T17:08:55.515Z  
+**Execution Timestamp:** 2026-10-08T16:38:57.166Z  
 **Environment:** Offline Node.js V8 Engine / In-Memory IndexedDB / Local Gemma 2:2B Pipeline  
 **Harness Agents:** `loop-operator`, `performance-optimizer`, `silent-failure-hunter`  
 
@@ -12,12 +12,12 @@ The TrailScribe offline data architecture and reasoning pipeline was subjected t
 | Metric | Target Standard | Benchmark Result | Status |
 | :--- | :--- | :--- | :--- |
 | **Concurrent Synthetic Agents** | 100 Agents | **100 Active Naturalists** | **PASSED** |
-| **Batch Ingestion Throughput** | > 100 records/sec | **1779 records/sec** | **EXCEEDED** |
+| **Batch Ingestion Throughput** | > 100 records/sec | **4053 records/sec** | **EXCEEDED** |
 | **Total Observations Processed** | 300 specimens | **300 specimens** | **PASSED** |
-| **Vector Nearest-Neighbor Latency** | < 10 ms / query | **0.142 ms** | **EXCEEDED** |
+| **Vector Nearest-Neighbor Latency** | < 10 ms / query | **0.054 ms** | **EXCEEDED** |
 | **Offline Network Dropout Protection** | 0 records lost | **0 data loss (100% atomic)** | **VERIFIED** |
-| **Gemma 2:2B / Ollama Fallback Latency** | < 100 ms | **0.21 ms** | **PASSED** |
-| **IndexedDB Heap Consumption** | < 10 MB | **~229.46 KB** | **OPTIMAL** |
+| **Gemma 2:2B / Ollama Fallback Latency** | < 100 ms | **0.13 ms** | **PASSED** |
+| **IndexedDB Heap Consumption** | < 10 MB | **~229.47 KB** | **OPTIMAL** |
 
 ---
 
@@ -67,14 +67,14 @@ pie title 100-Agent Synthetic Swarm Archetypes
 ### B. Ollama Timeout & Instant Fallback
 - **Scenario:** Ollama inference port unreachable or request timed out (>8,000ms threshold).
 - **Observed Behavior:** `GemmaRunner` caught the network abort without unhandled promise rejections, instantly falling back to `FieldEntityParser.parse()`.
-- **Latency Impact:** Heuristic fallback resolved in **0.21 ms**, completely preventing main thread UI freezes.
+- **Latency Impact:** Heuristic fallback resolved in **0.13 ms**, completely preventing main thread UI freezes.
 
 ---
 
 ## 4. Hardware Resource & Storage Profile
 - **Total Ingested Records in Test Run:** 310
-- **Raw JSON Payload Size:** 229.46 KB
+- **Raw JSON Payload Size:** 229.47 KB
 - **Average Record Size:** 0.74 KB / observation
-- **Vector Search Scale:** 384-dimensional cosine similarity over 50 items executed in 0.142 ms.
+- **Vector Search Scale:** 384-dimensional cosine similarity over 50 items executed in 0.054 ms.
 
 *Verification Confirmed: TrailScribe offline data layer is fully hardened for production hackathon deployment.*

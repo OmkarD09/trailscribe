@@ -4,7 +4,8 @@ import type {
   ModelRunnerProgress,
   AudioTranscriptionResult,
   ExtractedFieldEntities,
-  NaturalistInsightResult
+  NaturalistInsightResult,
+  ExpeditionDispatchResult
 } from './types.ts';
 import { FieldEntityParser } from './parser.ts';
 import { WebGPURunner } from './webgpu-runner.ts';
@@ -269,6 +270,83 @@ Output ONLY a JSON object:
       naturalistTips: fallbackTip,
       rawInsight: fallbackTip,
       modelUsed: 'TrailScribe Offline Naturalist Engine (Gemma-aligned)'
+    };
+  }
+
+  /**
+   * Expedition Storyteller: Leverages Gemma 2:2B to synthesize an evocative,
+   * scientifically grounded 19th-century naturalist field dispatch
+   * (in the style of Alexander von Humboldt or John Muir) from real trek metrics.
+   */
+  async generateExpeditionDispatch(summary: {
+    minutes: number;
+    distanceKm: number;
+    discoveriesCount: number;
+    phoneFreePercent: number;
+    specimens: Array<{ commonName?: string; scientificName?: string; habitat?: string }>;
+    trailName?: string;
+  }): Promise<ExpeditionDispatchResult> {
+    const trail = summary.trailName || 'Blackwood Ridge Circuit';
+    const taxaList = summary.specimens.map((s) => `${s.commonName || 'Specimen'}${s.scientificName ? ` (${s.scientificName})` : ''}`).join(', ') || 'native flora and avian calls';
+
+    if (this.isOllamaConnected) {
+      try {
+        const prompt = `You are a 19th-century naturalist explorer (in the literary, scientific tradition of Alexander von Humboldt, Charles Darwin, and John Muir) writing a dispatch in your field folio.
+Trek Observation Data:
+- Trail Sector: ${trail}
+- Duration: ${summary.minutes} minutes outside (${summary.phoneFreePercent}% phone-free presence)
+- Distance: ${summary.distanceKm.toFixed(2)} km walked
+- Biological Occurrences (${summary.discoveriesCount}): ${taxaList}
+
+Compose an authentic, eloquent field journal dispatch. Output ONLY a JSON object:
+{
+  "title": "An evocative expedition title",
+  "story": "2 paragraphs describing the terrain, atmospheric light, sensory presence, and species documented",
+  "excerpt": "A single memorable, poetic quote encapsulating the journey"
+}`;
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 9000);
+
+        const response = await fetch(this.ollamaEndpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: this.ollamaModel,
+            prompt: prompt,
+            stream: false,
+            format: 'json'
+          }),
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.response) {
+            const parsed = JSON.parse(data.response);
+            return {
+              title: parsed.title || `Field Dispatch: Traversal of ${trail}`,
+              story: parsed.story || 'A memorable voyage through untouched canopy.',
+              excerpt: parsed.excerpt || 'In every walk with nature, one receives far more than he seeks.',
+              modelUsed: `Google Gemma 2:2B (${this.ollamaModel})`
+            };
+          }
+        }
+      } catch (err) {
+        console.warn('Gemma dispatch storyteller fallback:', err);
+      }
+    }
+
+    // High-fidelity offline naturalist narrative generator
+    const firstTaxa = summary.specimens[0]?.commonName || 'canopy birds';
+    const secondTaxa = summary.specimens[1]?.commonName || 'damp lichen and flora';
+
+    return {
+      title: `Field Dispatch: Traversal of ${trail}`,
+      story: `Under a gentle overcast canopy, our boots traced ${summary.distanceKm.toFixed(2)} kilometers along the undulations of ${trail}. For ${summary.minutes} uninterrupted minutes—with ${summary.phoneFreePercent}% spent in total analog immersion—the forest revealed itself not through pixels, but through subtle sensory cues: the rustle of dry leaf litter and the scent of damp loam.\n\nOur journey yielded ${summary.discoveriesCount} distinct biological occurrences, chief among them ${firstTaxa} and ${secondTaxa}. When modern screens are quieted, the eye sharpens to microhabitats once overlooked; every mossy crevice and harmonic canopy whistle bears witness to an ancient, flourishing biome.`,
+      excerpt: `"To walk through ${trail} with quiet eyes is to rediscover that wilderness is not a place to visit, but a home to return to."`,
+      modelUsed: 'TrailScribe Naturalist Storyteller (Gemma-aligned)'
     };
   }
 }

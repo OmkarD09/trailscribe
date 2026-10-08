@@ -4,8 +4,12 @@ import 'fake-indexeddb/auto';
 
 import { TrailScribeDB } from '../src/storage/db.ts';
 import { DataExporter } from '../src/storage/exporter.ts';
+import { OfflineVectorStore } from '../src/storage/vector-store.ts';
 import { FieldEntityParser } from '../src/runner/parser.ts';
+import { GemmaRunner } from '../src/runner/gemma-runner.ts';
 import { computeBoundingBox, projectToCanvas, GeoLocationTracker } from '../src/utils/geolocation.ts';
+import { ToxicityAnalyzer } from '../src/utils/toxicity.ts';
+import { SolarEphemerisCalculator } from '../src/utils/ephemeris.ts';
 import type { FieldObservation, Coordinates } from '../src/storage/types.ts';
 
 describe('TrailScribe Offline Backend & Data Layer Validation', () => {
@@ -252,6 +256,134 @@ describe('TrailScribe Offline Backend & Data Layer Validation', () => {
     assert.ok(typeof refreshed.latitude === 'number');
     assert.ok(typeof refreshed.longitude === 'number');
     assert.ok(refreshed.accuracy !== undefined);
+  });
+
+  test('11. Offline Hybrid Vector & Semantic Text Search', async () => {
+    // Exact species query
+    const koelResults = await OfflineVectorStore.searchByText('Asian Koel');
+    assert.ok(koelResults.length > 0, 'Expected matches for "Asian Koel"');
+    assert.equal(koelResults[0].observation.id, 'asian-koel');
+    assert.ok(koelResults[0].similarityScore > 0.7);
+
+    // Habitat / context query
+    const canopyResults = await OfflineVectorStore.searchByText('canopy');
+    assert.ok(canopyResults.length > 0, 'Expected matches for "canopy"');
+
+    // Filter by kingdom
+    const birdResults = await OfflineVectorStore.searchByText('call', { kingdomFilter: 'Aves' });
+    for (const res of birdResults) {
+      assert.equal(res.observation.kingdomOrGroup, 'Aves');
+    }
+
+    // Empty query returns all cataloged items
+    const allResults = await OfflineVectorStore.searchByText('');
+    assert.ok(allResults.length >= 8);
+  });
+
+  test('12. Gemma 2:2B Expedition Journal Storyteller Synthesis', async () => {
+    const runner = new GemmaRunner();
+    assert.ok(runner.generateExpeditionDispatch);
+
+    const dispatch = await runner.generateExpeditionDispatch({
+      minutes: 42,
+      distanceKm: 3.1,
+      discoveriesCount: 4,
+      phoneFreePercent: 85,
+      specimens: [
+        { commonName: 'Asian Koel', scientificName: 'Eudynamys scolopaceus', habitat: 'Canopy' },
+        { commonName: 'Neem Tree', scientificName: 'Azadirachta indica', habitat: 'Deciduous' }
+      ],
+      trailName: 'Blackwood Ridge Circuit'
+    });
+
+    assert.ok(dispatch.title.length > 5, 'Expected descriptive dispatch title');
+    assert.ok(dispatch.story.includes('Blackwood Ridge Circuit'), 'Story must reference trail name');
+    assert.ok(dispatch.story.includes('3.10 kilometers') || dispatch.story.includes('3.1'), 'Story must reference distance');
+    assert.ok(dispatch.story.includes('42'), 'Story must reference duration');
+    assert.ok(dispatch.excerpt.length > 10, 'Expected poetic quote excerpt');
+    assert.ok(dispatch.modelUsed.length > 0);
+  });
+
+  test('13. Scientific GIS Exporters: GPX 1.1 and KML 2.2 Compliance', async () => {
+    const observations = await db.getAllObservations();
+    const testBreadcrumbs: Coordinates[] = [
+      { latitude: 19.0438, longitude: 73.0674, altitude: 85 },
+      { latitude: 19.0442, longitude: 73.0679, altitude: 88 },
+      { latitude: 19.0448, longitude: 73.0685, altitude: 92 }
+    ];
+
+    // GPX format validation
+    const gpx = DataExporter.toGPX(observations, testBreadcrumbs);
+    assert.ok(gpx.startsWith('<?xml version="1.0" encoding="UTF-8"?>'));
+    assert.ok(gpx.includes('<gpx version="1.1"'));
+    assert.ok(gpx.includes('<wpt lat='));
+    assert.ok(gpx.includes('<trk>'));
+    assert.ok(gpx.includes('<trkseg>'));
+    assert.ok(gpx.includes('<trkpt lat='));
+    assert.ok(gpx.includes('</gpx>'));
+
+    // KML format validation
+    const kml = DataExporter.toKML(observations, testBreadcrumbs);
+    assert.ok(kml.startsWith('<?xml version="1.0" encoding="UTF-8"?>'));
+    assert.ok(kml.includes('<kml xmlns="http://www.opengis.net/kml/2.2">'));
+    assert.ok(kml.includes('<Placemark>'));
+    assert.ok(kml.includes('<Point>'));
+    assert.ok(kml.includes('<LineString>'));
+    assert.ok(kml.includes('</kml>'));
+  });
+
+  test('14. Toxicity Analyzer & Forager Safety Hazard Assessment (Marcus Thorne Improvement)', async () => {
+    // 1. Deadly mushroom identification
+    const deathCap = ToxicityAnalyzer.evaluate('Death Cap', 'Amanita phalloides');
+    assert.equal(deathCap.isToxic, true);
+    assert.equal(deathCap.severity, 'DEADLY');
+    assert.ok(deathCap.toxinTypes.includes('Alpha-amanitin'));
+    assert.ok(deathCap.warningSummary.includes('amatoxin'));
+    assert.ok(deathCap.lookalikeRisk.length > 0);
+
+    // 2. Poisonous neurotoxic mushroom
+    const flyAgaric = ToxicityAnalyzer.evaluate('Fly Agaric', 'Amanita muscaria');
+    assert.equal(flyAgaric.isToxic, true);
+    assert.equal(flyAgaric.severity, 'POISONOUS');
+    assert.ok(flyAgaric.toxinTypes.includes('Ibotenic Acid'));
+    assert.ok(flyAgaric.badgeLabel.includes('POISONOUS'));
+
+    // 3. Contact skin irritant plant
+    const nettle = ToxicityAnalyzer.evaluate('Stinging Nettle', 'Urtica dioica');
+    assert.equal(nettle.isToxic, true);
+    assert.equal(nettle.severity, 'IRRITANT');
+    assert.ok(nettle.toxinTypes.includes('Formic Acid'));
+
+    // 4. Safe / non-toxic baseline flora
+    const neem = ToxicityAnalyzer.evaluate('Neem Tree', 'Azadirachta indica', 'Plantae');
+    assert.equal(neem.isToxic, false);
+    assert.equal(neem.severity, 'UNKNOWN');
+  });
+
+  test('15. Wilderness Solar Ephemeris & Dusk Countdown Gauge (Ranger Dave O\'Connor Improvement)', async () => {
+    // Standard coordinates (Kharghar / Sahyadri region)
+    const ephem = SolarEphemerisCalculator.calculate(19.0438, 73.0674);
+
+    assert.ok(ephem.sunsetTimeString.length > 0);
+    assert.ok(ephem.civilDuskTimeString.length > 0);
+    assert.ok(typeof ephem.remainingMinutes === 'number');
+    assert.ok(ephem.daylightElapsedPercent >= 0 && ephem.daylightElapsedPercent <= 100);
+
+    // Test specific time 30 minutes before sunset (should trigger urgent alert)
+    const sunsetMinus30 = new Date(ephem.sunsetDate.getTime() - 30 * 60 * 1000);
+    const urgentEphem = SolarEphemerisCalculator.calculate(19.0438, 73.0674, sunsetMinus30);
+    assert.equal(urgentEphem.isUrgentAlert, true);
+    assert.equal(urgentEphem.remainingMinutes, 30);
+    assert.equal(urgentEphem.sunPhase, 'golden_hour');
+    assert.ok(urgentEphem.alertMessage.includes('DUSK PROXIMITY ALERT'));
+
+    // Test midday (12:00 PM) - should be daylight with no alert
+    const midday = new Date(ephem.sunsetDate);
+    midday.setHours(12, 0, 0, 0);
+    const middayEphem = SolarEphemerisCalculator.calculate(19.0438, 73.0674, midday);
+    assert.equal(middayEphem.isUrgentAlert, false);
+    assert.equal(middayEphem.sunPhase, 'daylight');
+    assert.ok(middayEphem.remainingMinutes > 60);
   });
 });
 

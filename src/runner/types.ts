@@ -36,6 +36,13 @@ export interface NaturalistInsightResult {
   modelUsed?: string;
 }
 
+export interface ExpeditionDispatchResult {
+  title: string;
+  story: string;
+  excerpt: string;
+  modelUsed: string;
+}
+
 export interface ModelRunnerInterface {
   readonly id: string;
   readonly name: string;
@@ -47,4 +54,12 @@ export interface ModelRunnerInterface {
   extractFieldEntities(transcript: string): Promise<ExtractedFieldEntities>;
   generateEmbedding(text: string): Promise<number[]>;
   queryNaturalistContext?(specimenName: string, scientificName?: string): Promise<NaturalistInsightResult>;
+  generateExpeditionDispatch?(summary: {
+    minutes: number;
+    distanceKm: number;
+    discoveriesCount: number;
+    phoneFreePercent: number;
+    specimens: Array<{ commonName?: string; scientificName?: string; habitat?: string }>;
+    trailName?: string;
+  }): Promise<ExpeditionDispatchResult>;
 }

@@ -4,6 +4,7 @@ import { FieldEntityParser } from '../../runner/parser';
 import { getModelRunner } from '../../runner';
 import { VisualClassifier } from '../../runner/visual-classifier';
 import type { FieldObservation } from '../../storage/types';
+import { ToxicityAnalyzer } from '../../utils/toxicity';
 
 export class NatureScannerView {
   private container: HTMLElement;
@@ -181,6 +182,9 @@ export class NatureScannerView {
               <span class="text-[10px] uppercase tracking-wider font-semibold">Listen Audio</span>
             </button>
           </div>
+          
+          <!-- Forager Safety & Botanical Toxicity Hazard Banner (Marcus Thorne Feedback) -->
+          <div id="scanner-toxicity-banner" class="hidden"></div>
 
           <!-- Alternative Candidate Chips (Quick Switcher) -->
           <div id="candidate-chips-container" class="flex items-center gap-1.5 overflow-x-auto py-1 my-0.5 no-scrollbar min-h-[32px]"></div>
@@ -274,15 +278,22 @@ export class NatureScannerView {
     container.innerHTML = `
       <div class="flex items-center gap-1.5 shrink-0 px-0.5">
         <span class="text-[10px] font-mono uppercase text-secondary font-bold shrink-0">Candidates:</span>
-        ${candidates.map((c) => `
-          <button class="candidate-chip px-2.5 py-1 rounded-full text-[11px] font-medium transition-all shrink-0 cursor-pointer active:scale-95 ${
-            c.name === this.activeCommonName 
-              ? 'bg-primary text-vellum-bg font-bold shadow-sm' 
-              : 'bg-surface-card-subtle text-primary hover:bg-surface-container border border-outline-hairline/60'
-          }" data-name="${c.name}" data-latin="${c.scientificName}" data-conf="${c.confidence}">
-            ${c.name === this.activeCommonName ? '✓ ' : ''}${c.name} · ${Math.round(c.confidence * 100)}%
-          </button>
-        `).join('')}
+        ${candidates.map((c) => {
+          const tox = ToxicityAnalyzer.evaluate(c.name, c.scientificName);
+          const toxPrefix = tox.isToxic ? (tox.severity === 'DEADLY' ? '💀 ' : '⚠️ ') : '';
+          const borderStyle = tox.isToxic 
+            ? 'border-red-600/80 bg-red-950/20 text-red-100 font-bold' 
+            : 'border-outline-hairline/60 bg-surface-card-subtle text-primary';
+          return `
+            <button class="candidate-chip px-2.5 py-1 rounded-full text-[11px] font-medium transition-all shrink-0 cursor-pointer active:scale-95 border ${
+              c.name === this.activeCommonName 
+                ? 'bg-primary text-vellum-bg font-bold shadow-sm border-primary' 
+                : `${borderStyle} hover:bg-surface-container`
+            }" data-name="${c.name}" data-latin="${c.scientificName}" data-conf="${c.confidence}">
+              ${c.name === this.activeCommonName ? '✓ ' : ''}${toxPrefix}${c.name} · ${Math.round(c.confidence * 100)}%
+            </button>
+          `;
+        }).join('')}
       </div>
     `;
 
@@ -314,6 +325,7 @@ export class NatureScannerView {
             `;
           }
 
+          this.updateToxicityAlert(this.activeCommonName, this.activeScientificName, this.activeKingdom);
           this.renderCandidateChips(candidates);
         }
       });
@@ -432,6 +444,7 @@ export class NatureScannerView {
             `;
           }
           this.renderCandidateChips(this.activeCandidates);
+          this.updateToxicityAlert(this.activeCommonName, this.activeScientificName, this.activeKingdom);
         }
       };
       reader.readAsDataURL(file);
@@ -706,6 +719,41 @@ export class NatureScannerView {
     if (dot) {
       dot.classList.remove('bg-emerald-400');
       dot.classList.add('bg-tertiary-fixed-dim');
+    }
+  }
+
+  private updateToxicityAlert(commonName: string, scientificName?: string, kingdom?: string): void {
+    const banner = this.container.querySelector('#scanner-toxicity-banner');
+    if (!banner) return;
+    if (!commonName) {
+      banner.classList.add('hidden');
+      return;
+    }
+
+    const tox = ToxicityAnalyzer.evaluate(commonName, scientificName, kingdom);
+    if (tox.isToxic) {
+      banner.className = `flex items-center justify-between px-2.5 py-1.5 rounded-lg border text-xs shadow-sm mt-1.5 ${
+        tox.severity === 'DEADLY'
+          ? 'bg-red-950 text-red-200 border-red-700/80'
+          : tox.severity === 'POISONOUS'
+          ? 'bg-amber-950 text-amber-200 border-amber-700/80'
+          : 'bg-yellow-950 text-yellow-200 border-yellow-700/80'
+      }`;
+      banner.innerHTML = `
+        <div class="flex items-center gap-1.5 min-w-0">
+          <span class="material-symbols-outlined text-[16px] ${tox.severity === 'DEADLY' ? 'text-red-400 animate-pulse' : 'text-amber-400'} shrink-0">${tox.iconName}</span>
+          <div class="flex flex-col min-w-0">
+            <span class="font-bold text-[10px] tracking-wide uppercase truncate leading-tight">${tox.title}</span>
+            <span class="text-[10px] opacity-90 truncate leading-tight">${tox.warningSummary}</span>
+          </div>
+        </div>
+        <span class="text-[9px] font-mono uppercase tracking-wider font-bold px-1.5 py-0.5 rounded bg-black/40 border border-white/20 shrink-0 ml-1">
+          ${tox.badgeLabel}
+        </span>
+      `;
+      banner.classList.remove('hidden');
+    } else {
+      banner.classList.add('hidden');
     }
   }
 }

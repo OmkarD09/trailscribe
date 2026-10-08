@@ -1,4 +1,4 @@
-import type { FieldObservation, DarwinCoreRecord } from './types';
+import type { FieldObservation, DarwinCoreRecord, Coordinates } from './types.ts';
 
 export class DataExporter {
   /**
@@ -103,6 +103,136 @@ export class DataExporter {
     ]);
 
     return [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+  }
+
+  /**
+   * Generates standard GPX 1.1 format for Garmin, Strava, GaiaGPS, and CalTopo.
+   * Includes observation waypoints (<wpt>) and trail trackpoints (<trkpt>).
+   */
+  static toGPX(observations: FieldObservation[], breadcrumbs?: Coordinates[]): string {
+    const escapeXml = (unsafe: unknown) => {
+      if (unsafe === null || unsafe === undefined) return '';
+      return String(unsafe)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;');
+    };
+
+    const validObs = observations.filter(
+      (o) => o.coordinates && typeof o.coordinates.latitude === 'number' && typeof o.coordinates.longitude === 'number'
+    );
+
+    const waypointsXml = validObs
+      .map((obs) => {
+        const c = obs.coordinates!;
+        const ele = c.altitude ? `    <ele>${c.altitude.toFixed(1)}</ele>\n` : '';
+        const name = escapeXml(obs.commonName || obs.speciesCandidates[0] || 'Field Observation');
+        const desc = escapeXml(
+          [
+            obs.scientificName ? `Taxa: ${obs.scientificName}` : null,
+            obs.kingdomOrGroup ? `Kingdom: ${obs.kingdomOrGroup}` : null,
+            obs.habitat ? `Habitat: ${obs.habitat}` : null,
+            obs.substrate ? `Substrate: ${obs.substrate}` : null,
+            obs.fieldNotes ? `Notes: ${obs.fieldNotes}` : null
+          ]
+            .filter(Boolean)
+            .join(' | ')
+        );
+
+        return `  <wpt lat="${c.latitude.toFixed(6)}" lon="${c.longitude.toFixed(6)}">
+${ele}    <time>${new Date(obs.timestamp).toISOString()}</time>
+    <name>${name}</name>
+    <desc>${desc}</desc>
+    <sym>Flora/Fauna</sym>
+  </wpt>`;
+      })
+      .join('\n');
+
+    let trackXml = '';
+    const trackPoints = breadcrumbs && breadcrumbs.length > 0 ? breadcrumbs : validObs.map((o) => o.coordinates!);
+
+    if (trackPoints.length > 0) {
+      const segPoints = trackPoints
+        .map((tp) => {
+          const ele = tp.altitude ? `        <ele>${tp.altitude.toFixed(1)}</ele>\n` : '';
+          return `      <trkpt lat="${tp.latitude.toFixed(6)}" lon="${tp.longitude.toFixed(6)}">\n${ele}      </trkpt>`;
+        })
+        .join('\n');
+
+      trackXml = `  <trk>
+    <name>TrailScribe Expedition Route</name>
+    <trkseg>
+${segPoints}
+    </trkseg>
+  </trk>`;
+    }
+
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="TrailScribe Offline Naturalist Assistant" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata>
+    <name>TrailScribe Naturalist Expedition</name>
+    <time>${new Date().toISOString()}</time>
+  </metadata>
+${waypointsXml}
+${trackXml}
+</gpx>`;
+  }
+
+  /**
+   * Generates standard KML 2.2 format for Google Earth and GIS layers.
+   */
+  static toKML(observations: FieldObservation[], breadcrumbs?: Coordinates[]): string {
+    const escapeXml = (unsafe: unknown) => {
+      if (unsafe === null || unsafe === undefined) return '';
+      return String(unsafe)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;');
+    };
+
+    const validObs = observations.filter(
+      (o) => o.coordinates && typeof o.coordinates.latitude === 'number' && typeof o.coordinates.longitude === 'number'
+    );
+
+    const placemarks = validObs
+      .map((obs) => {
+        const c = obs.coordinates!;
+        const name = escapeXml(obs.commonName || 'Specimen');
+        const desc = escapeXml(`${obs.scientificName || ''} - ${obs.habitat || ''}`);
+        return `    <Placemark>
+      <name>${name}</name>
+      <description>${desc}</description>
+      <Point>
+        <coordinates>${c.longitude.toFixed(6)},${c.latitude.toFixed(6)},${c.altitude ?? 0}</coordinates>
+      </Point>
+    </Placemark>`;
+      })
+      .join('\n');
+
+    let lineStringXml = '';
+    const pts = breadcrumbs && breadcrumbs.length > 0 ? breadcrumbs : validObs.map((o) => o.coordinates!);
+    if (pts.length > 1) {
+      const coordStr = pts.map((p) => `${p.longitude.toFixed(6)},${p.latitude.toFixed(6)},${p.altitude ?? 0}`).join(' ');
+      lineStringXml = `    <Placemark>
+      <name>Expedition Trail Path</name>
+      <LineString>
+        <coordinates>${coordStr}</coordinates>
+      </LineString>
+    </Placemark>`;
+    }
+
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>TrailScribe Field Folio</name>
+${placemarks}
+${lineStringXml}
+  </Document>
+</kml>`;
   }
 
   /**

@@ -1,6 +1,7 @@
 import { db } from '../../storage/db';
 import { FieldEntityParser } from '../../runner/parser';
 import { getModelRunner } from '../../runner';
+import { ToxicityAnalyzer } from '../../utils/toxicity';
 
 export class IdentificationResultView {
   private container: HTMLElement;
@@ -53,6 +54,9 @@ export class IdentificationResultView {
     const coordsText = this.specimenData?.coordsText || '19.0438° N, 73.0674° E';
     const timeText = this.specimenData?.timeText || '08:42 AM';
     const locationText = this.specimenData?.locationText || 'Kharghar Hills';
+
+    // Compute forager safety and toxicity profile
+    const toxicity = ToxicityAnalyzer.evaluate(commonName, scientificName, this.specimenData?.kingdomOrGroup);
 
     this.container.innerHTML = `
       <div class="flex flex-col w-full pb-28 view-enter">
@@ -113,6 +117,60 @@ export class IdentificationResultView {
             Common around urban parks and gardens. Known for three bold dorsal stripes and a soft, bushy tail.
           </p>
         </section>
+
+        <!-- Toxicity / Forager Safety Hazard Banner (Requested by Marcus Thorne) -->
+        ${
+          toxicity.isToxic
+            ? `
+        <section class="px-margin pt-space-sm" id="toxicity-alert-section">
+          <div class="relative rounded-xl p-space-md shadow-md overflow-hidden flex flex-col gap-2.5 border-2 ${
+            toxicity.severity === 'DEADLY'
+              ? 'bg-red-950/95 text-red-100 border-red-500'
+              : toxicity.severity === 'POISONOUS'
+              ? 'bg-amber-950/95 text-amber-100 border-amber-500'
+              : 'bg-yellow-950/95 text-yellow-100 border-yellow-600'
+          }">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-[24px] ${
+                  toxicity.severity === 'DEADLY' ? 'text-red-400 animate-pulse' : 'text-amber-400'
+                }">${toxicity.iconName}</span>
+                <span class="font-label-sm text-[11px] uppercase tracking-wider font-bold">${toxicity.title}</span>
+              </div>
+              <span class="px-2.5 py-0.5 rounded-full text-[9.5px] font-mono font-bold tracking-widest uppercase bg-black/50 border border-white/20">
+                ${toxicity.badgeLabel}
+              </span>
+            </div>
+            
+            <p class="font-body-sm text-[13px] leading-snug font-medium text-white/95">
+              ${toxicity.warningSummary}
+            </p>
+
+            <div class="bg-black/40 rounded-lg p-2.5 flex flex-col gap-1.5 text-[11.5px] border border-white/10 mt-0.5">
+              ${
+                toxicity.toxinTypes.length > 0
+                  ? `
+                <div class="flex items-baseline gap-1.5">
+                  <span class="text-white/60 uppercase font-mono text-[10px] shrink-0 font-bold">Identified Toxins:</span>
+                  <span class="text-amber-200 font-mono font-semibold">${toxicity.toxinTypes.join(', ')}</span>
+                </div>
+              `
+                  : ''
+              }
+              <div class="flex items-baseline gap-1.5">
+                <span class="text-white/60 uppercase font-mono text-[10px] shrink-0 font-bold">Lookalike Risk:</span>
+                <span class="text-white/90">${toxicity.lookalikeRisk}</span>
+              </div>
+              <div class="flex items-baseline gap-1.5 pt-1 border-t border-white/10">
+                <span class="text-red-300 font-bold uppercase font-mono text-[10px] shrink-0">Field Safety:</span>
+                <span class="text-red-200 font-semibold">${toxicity.safetyGuidance}</span>
+              </div>
+            </div>
+          </div>
+        </section>
+        `
+            : ''
+        }
 
         <!-- Editorial Did You Know Highlight -->
         <section class="px-margin pt-space-md">

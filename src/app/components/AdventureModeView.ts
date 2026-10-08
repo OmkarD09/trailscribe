@@ -1,6 +1,7 @@
 import { db } from '../../storage/db';
 import { GeoLocationTracker } from '../../utils/geolocation';
 import { AudioFeedback } from '../../utils/audio-helpers';
+import { SolarEphemerisCalculator } from '../../utils/ephemeris';
 
 export interface AdventureSessionSummary {
   minutes: number;
@@ -22,6 +23,11 @@ export class AdventureModeView {
   private timerInterval: ReturnType<typeof setInterval> | null = null;
   private triggeredGeofences: Set<string> = new Set();
   private lastGeofenceCheck: number = 0;
+  private breadcrumbs: Array<{ latitude: number; longitude: number; timestamp: number }> = [];
+  private trailheadOrigin: { latitude: number; longitude: number } | null = null;
+  private currentCoordinates: { latitude: number; longitude: number } | null = null;
+  private currentBearingToOrigin: number = 42;
+  private distanceToOriginMeters: number = 840;
 
   constructor(
     container: HTMLElement,
@@ -35,11 +41,23 @@ export class AdventureModeView {
     this.onSpotSpecimen = callbacks.onSpotSpecimen;
     this.onConcludeAdventure = callbacks.onConcludeAdventure;
     this.onOpenMap = callbacks.onOpenMap;
+
+    // Load any existing session breadcrumbs
+    try {
+      const saved = localStorage.getItem('trailscribe_breadcrumbs');
+      if (saved) this.breadcrumbs = JSON.parse(saved);
+      const originSaved = localStorage.getItem('trailscribe_trailhead');
+      if (originSaved) this.trailheadOrigin = JSON.parse(originSaved);
+    } catch {}
   }
 
   render(): void {
     const minutes = Math.floor(this.elapsedSeconds / 60);
     const progressArc = Math.min(100, Math.round((minutes / 45) * 100));
+
+    const lat = this.currentCoordinates?.latitude || this.trailheadOrigin?.latitude || 19.0438;
+    const lon = this.currentCoordinates?.longitude || this.trailheadOrigin?.longitude || 73.0674;
+    const ephem = SolarEphemerisCalculator.calculate(lat, lon);
 
     this.container.innerHTML = `
       <div class="flex flex-col w-full pb-28 view-enter">
@@ -59,6 +77,68 @@ export class AdventureModeView {
                 <span class="material-symbols-outlined text-[16px]">explore</span>
                 <span>MAP</span>
               </button>
+            </div>
+          </div>
+
+          <!-- Offline Backtrack to Trailhead Compass HUD -->
+          <div class="bg-surface-card rounded-xl p-space-md shadow-sm border border-outline-hairline/60 flex items-center justify-between gap-space-md" id="backtrack-hud-card">
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="relative w-12 h-12 rounded-full bg-surface-container flex items-center justify-center border-2 border-outline-hairline/80 shadow-inner shrink-0">
+                <span class="absolute top-0.5 text-[7px] font-mono font-bold text-secondary">N</span>
+                <span class="material-symbols-outlined text-primary text-[24px] transition-transform duration-500 ease-out" id="backtrack-needle" style="transform: rotate(${this.currentBearingToOrigin}deg);">navigation</span>
+              </div>
+              <div class="flex flex-col min-w-0">
+                <div class="flex items-center gap-1.5">
+                  <span class="text-[9.5px] font-mono uppercase tracking-wider text-tertiary-fixed-dim font-bold">BACKTRACK TRAILHEAD</span>
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                </div>
+                <span class="font-title-md text-title-md text-primary font-bold truncate leading-tight mt-0.5" id="backtrack-dist-label">${this.distanceToOriginMeters}m to Trailhead</span>
+                <span class="text-[11px] text-on-surface-variant font-mono truncate" id="backtrack-bearing-label">Bearing: ${String(Math.round(this.currentBearingToOrigin)).padStart(3, '0')}° NE • Direct line</span>
+              </div>
+            </div>
+            <button id="open-backtrack-map-btn" class="shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface-card-subtle hover:bg-surface-container text-primary text-xs font-semibold border border-outline-hairline/60 active:scale-95 transition-all cursor-pointer shadow-sm" title="Show Trail Breadcrumbs on Map">
+              <span class="material-symbols-outlined text-[15px] text-secondary">route</span>
+              <span>Trail</span>
+            </button>
+          </div>
+
+          <!-- Wilderness Solar Ephemeris & Dusk Countdown HUD (Ranger Dave O'Connor SAR Feature) -->
+          <div class="bg-surface-card rounded-xl p-space-md shadow-sm border border-outline-hairline/60 flex flex-col gap-2.5 transition-all" id="ephemeris-hud-card">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <div class="w-9 h-9 rounded-full bg-amber-container text-amber-on-container flex items-center justify-center shrink-0">
+                  <span class="material-symbols-outlined text-[20px]" id="ephem-icon">${ephem.iconName}</span>
+                </div>
+                <div class="flex flex-col min-w-0">
+                  <span class="text-[9.5px] font-mono uppercase tracking-wider text-tertiary-fixed-dim font-bold">SOLAR EPHEMERIS · DUSK GAUGE</span>
+                  <span class="font-title-md text-title-md text-primary font-bold truncate leading-tight mt-0.5" id="ephem-remaining-label">
+                    ${ephem.remainingMinutes > 0 ? `${ephem.remainingHoursText} to Sunset` : ephem.remainingHoursText}
+                  </span>
+                </div>
+              </div>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase bg-surface-card-subtle border border-outline-hairline/60 text-secondary shrink-0" id="ephem-status-badge">
+                ${ephem.statusBadge}
+              </span>
+            </div>
+
+            <!-- Daylight Progress Horizon -->
+            <div class="flex flex-col gap-1">
+              <div class="flex items-center justify-between text-[11px] font-mono text-on-surface-variant">
+                <span>06:15 Dawn</span>
+                <span class="font-bold text-primary" id="ephem-sunset-label">Sunset ${ephem.sunsetTimeString}</span>
+                <span id="ephem-dusk-label">Dusk ${ephem.civilDuskTimeString}</span>
+              </div>
+              <div class="w-full bg-surface-container rounded-full h-2 overflow-hidden relative border border-outline-hairline/40">
+                <div id="ephem-progress-bar" class="h-full rounded-full transition-all duration-500 ${
+                  ephem.isUrgentAlert ? 'bg-amber-600' : 'bg-primary'
+                }" style="width: ${ephem.daylightElapsedPercent}%;"></div>
+              </div>
+            </div>
+
+            <!-- SAR Proximity Alert Banner (<45m daylight remaining or after dark) -->
+            <div id="ephem-alert-box" class="${ephem.isUrgentAlert ? 'flex' : 'hidden'} items-center gap-2 px-2.5 py-1.5 rounded-lg bg-amber-950/80 text-amber-200 border border-amber-600/60 text-[11px]">
+              <span class="material-symbols-outlined text-[16px] text-amber-400 shrink-0 animate-pulse">warning</span>
+              <span id="ephem-alert-msg" class="leading-tight font-medium">${ephem.alertMessage}</span>
             </div>
           </div>
 
@@ -208,7 +288,7 @@ export class AdventureModeView {
   private startActiveEngine(): void {
     this.stop();
 
-    // Start timer interval for live sunlight bath and tracking
+    // Start timer interval for live sunlight bath, ephemeris ticker and tracking
     this.timerInterval = setInterval(() => {
       if (this.isPaused) return;
 
@@ -233,6 +313,11 @@ export class AdventureModeView {
         if (kmEl) kmEl.textContent = `${this.distanceKm.toFixed(2)} km`;
       }
 
+      // Refresh Ephemeris solar countdown every 10 seconds
+      if (this.elapsedSeconds % 10 === 0) {
+        this.updateEphemerisUi();
+      }
+
       // Tactile Geofencing proximity audit every 4 seconds
       if (Date.now() - this.lastGeofenceCheck > 4000) {
         this.lastGeofenceCheck = Date.now();
@@ -243,6 +328,7 @@ export class AdventureModeView {
     // Refresh GPS coordinates with hardware query
     this.refreshGpsTelemetry(false);
     this.checkProximityGeofencing();
+    this.updateEphemerisUi();
   }
 
   private haversineMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -331,6 +417,7 @@ export class AdventureModeView {
   private async refreshGpsTelemetry(forceFresh = false): Promise<void> {
     try {
       const coords = await GeoLocationTracker.getCurrentPosition(forceFresh);
+      this.currentCoordinates = { latitude: coords.latitude, longitude: coords.longitude };
       const label = this.container.querySelector('#gps-telemetry-label');
       const sourceLabel = this.container.querySelector('#gps-source-label');
       const source = GeoLocationTracker.getLocationSource();
@@ -349,10 +436,123 @@ export class AdventureModeView {
             : 'Estimated Field Sector';
         sourceLabel.textContent = sourceDesc;
       }
+
+      // Breadcrumb recording & Trailhead anchor
+      if (!this.trailheadOrigin) {
+        this.trailheadOrigin = { latitude: coords.latitude, longitude: coords.longitude };
+        try {
+          localStorage.setItem('trailscribe_trailhead', JSON.stringify(this.trailheadOrigin));
+        } catch {}
+      }
+
+      // Add to breadcrumb trail if sufficiently distant from last point
+      const lastPoint = this.breadcrumbs[this.breadcrumbs.length - 1];
+      const shouldPush = !lastPoint || this.haversineMeters(lastPoint.latitude, lastPoint.longitude, coords.latitude, coords.longitude) >= 8;
+
+      if (shouldPush) {
+        this.breadcrumbs.push({
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+          timestamp: Date.now()
+        });
+        try {
+          localStorage.setItem('trailscribe_breadcrumbs', JSON.stringify(this.breadcrumbs));
+        } catch {}
+      }
+
+      // Compute line-of-sight bearing & distance back to Trailhead origin
+      if (this.trailheadOrigin) {
+        const dist = this.haversineMeters(coords.latitude, coords.longitude, this.trailheadOrigin.latitude, this.trailheadOrigin.longitude);
+        this.distanceToOriginMeters = Math.max(10, Math.round(dist));
+        this.currentBearingToOrigin = this.calculateBearing(coords.latitude, coords.longitude, this.trailheadOrigin.latitude, this.trailheadOrigin.longitude);
+        this.updateBacktrackUi();
+      }
+
+      // Update solar ephemeris with updated coordinates
+      this.updateEphemerisUi();
     } catch {
       const sourceLabel = this.container.querySelector('#gps-source-label');
       if (sourceLabel) sourceLabel.textContent = 'Searching for Satellites...';
     }
+  }
+
+  private updateEphemerisUi(): void {
+    const lat = this.currentCoordinates?.latitude || this.trailheadOrigin?.latitude || 19.0438;
+    const lon = this.currentCoordinates?.longitude || this.trailheadOrigin?.longitude || 73.0674;
+    const ephem = SolarEphemerisCalculator.calculate(lat, lon);
+
+    const icon = this.container.querySelector('#ephem-icon');
+    const remainingLabel = this.container.querySelector('#ephem-remaining-label');
+    const statusBadge = this.container.querySelector('#ephem-status-badge');
+    const sunsetLabel = this.container.querySelector('#ephem-sunset-label');
+    const duskLabel = this.container.querySelector('#ephem-dusk-label');
+    const progressBar = this.container.querySelector('#ephem-progress-bar') as HTMLElement | null;
+    const alertBox = this.container.querySelector('#ephem-alert-box');
+    const alertMsg = this.container.querySelector('#ephem-alert-msg');
+
+    if (icon) icon.textContent = ephem.iconName;
+    if (remainingLabel) {
+      remainingLabel.textContent = ephem.remainingMinutes > 0
+        ? `${ephem.remainingHoursText} to Sunset`
+        : ephem.remainingHoursText;
+    }
+    if (statusBadge) statusBadge.textContent = ephem.statusBadge;
+    if (sunsetLabel) sunsetLabel.textContent = `Sunset ${ephem.sunsetTimeString}`;
+    if (duskLabel) duskLabel.textContent = `Dusk ${ephem.civilDuskTimeString}`;
+    if (progressBar) {
+      progressBar.style.width = `${ephem.daylightElapsedPercent}%`;
+      progressBar.className = `h-full rounded-full transition-all duration-500 ${
+        ephem.isUrgentAlert ? 'bg-amber-600' : 'bg-primary'
+      }`;
+    }
+    if (alertBox && alertMsg) {
+      alertMsg.textContent = ephem.alertMessage;
+      if (ephem.isUrgentAlert) {
+        alertBox.classList.remove('hidden');
+        alertBox.classList.add('flex');
+      } else {
+        alertBox.classList.add('hidden');
+        alertBox.classList.remove('flex');
+      }
+    }
+  }
+
+  private calculateBearing(fromLat: number, fromLon: number, toLat: number, toLon: number): number {
+    const toRad = (deg: number) => (deg * Math.PI) / 180;
+    const toDeg = (rad: number) => (rad * 180) / Math.PI;
+    const phi1 = toRad(fromLat);
+    const phi2 = toRad(toLat);
+    const deltaLambda = toRad(toLon - fromLon);
+    const y = Math.sin(deltaLambda) * Math.cos(phi2);
+    const x = Math.cos(phi1) * Math.sin(phi2) - Math.sin(phi1) * Math.cos(phi2) * Math.cos(deltaLambda);
+    const brng = toDeg(Math.atan2(y, x));
+    return (brng + 360) % 360;
+  }
+
+  private updateBacktrackUi(): void {
+    const needle = this.container.querySelector('#backtrack-needle') as HTMLElement | null;
+    const distLabel = this.container.querySelector('#backtrack-dist-label');
+    const bearingLabel = this.container.querySelector('#backtrack-bearing-label');
+
+    if (needle) {
+      needle.style.transform = `rotate(${Math.round(this.currentBearingToOrigin)}deg)`;
+    }
+    if (distLabel) {
+      const distStr = this.distanceToOriginMeters >= 1000
+        ? `${(this.distanceToOriginMeters / 1000).toFixed(2)} km`
+        : `${this.distanceToOriginMeters}m`;
+      distLabel.textContent = `${distStr} to Trailhead`;
+    }
+    if (bearingLabel) {
+      const cardinal = this.getCardinalDirection(this.currentBearingToOrigin);
+      bearingLabel.textContent = `Bearing: ${String(Math.round(this.currentBearingToOrigin)).padStart(3, '0')}° ${cardinal} • Direct line`;
+    }
+  }
+
+  private getCardinalDirection(bearing: number): string {
+    const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+    const idx = Math.round(bearing / 45) % 8;
+    return directions[idx];
   }
 
   public stop(): void {
@@ -372,6 +572,14 @@ export class AdventureModeView {
 
     const openFieldMapBtn = this.container.querySelector('#open-field-map-btn');
     openFieldMapBtn?.addEventListener('click', () => {
+      this.onOpenMap();
+    });
+
+    const openBacktrackBtn = this.container.querySelector('#open-backtrack-map-btn');
+    openBacktrackBtn?.addEventListener('click', () => {
+      if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+        try { navigator.vibrate([40, 20, 40]); } catch {}
+      }
       this.onOpenMap();
     });
 

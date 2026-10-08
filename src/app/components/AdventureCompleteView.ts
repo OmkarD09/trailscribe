@@ -1,6 +1,8 @@
 import { db } from '../../storage/db';
 import type { AdventureSessionSummary } from './AdventureModeView';
 import type { FieldObservation } from '../../storage/types';
+import { getModelRunner } from '../../runner';
+import { AudioFeedback } from '../../utils/audio-helpers';
 
 export class AdventureCompleteView {
   private container: HTMLElement;
@@ -115,6 +117,53 @@ export class AdventureCompleteView {
           </div>
         </div>
 
+        <!-- Gemma 2:2B Expedition Storyteller Dispatch Card -->
+        <div class="px-margin mt-space-lg">
+          <div class="relative bg-surface-card rounded-xl p-space-md shadow-md border border-secondary/40 overflow-hidden flex flex-col gap-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span class="font-label-sm text-label-sm text-primary uppercase tracking-wider font-bold">
+                  NATURALIST DISPATCH · GEMMA 2:2B
+                </span>
+              </div>
+              <button id="synthesize-dispatch-btn" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-high hover:bg-surface-container text-primary active:scale-95 transition-all text-xs font-semibold cursor-pointer border border-outline-hairline/60">
+                <span class="material-symbols-outlined text-[15px] text-tertiary-fixed-dim" id="dispatch-spinner-icon">psychology</span>
+                <span id="dispatch-btn-label">Synthesize Prose</span>
+              </button>
+            </div>
+
+            <div id="dispatch-content-box" class="flex flex-col gap-2.5 bg-surface-container-low rounded-xl p-3.5 border-l-4 border-tertiary-fixed-dim">
+              <h4 id="dispatch-headline" class="font-title-md text-title-md text-primary font-serif font-bold italic">
+                Field Dispatch: Traversal of Blackwood Ridge Circuit
+              </h4>
+              <p id="dispatch-story" class="font-body-sm text-[12.5px] text-on-surface leading-relaxed whitespace-pre-line font-serif">
+Under an amber afternoon canopy, our boots traced ${distance} kilometers along the undulations of Blackwood Ridge Circuit. For ${minutes} uninterrupted minutes—with ${phoneFreePercent}% spent in total analog immersion—the forest revealed itself not through pixels, but through subtle sensory cues: the rustle of dry leaf litter and the scent of damp loam.
+
+Our journey yielded ${discoveries} distinct biological occurrences. When modern screens are quieted, the eye sharpens to microhabitats once overlooked; every mossy crevice and harmonic canopy whistle bears witness to an ancient, flourishing biome.
+              </p>
+              <div class="pt-2 border-t border-outline-hairline/60 flex items-center justify-between">
+                <p id="dispatch-quote" class="text-[11px] italic text-secondary font-serif">
+                  "In every walk with nature, one receives far more than he seeks."
+                </p>
+                <div class="flex items-center gap-1.5">
+                  <button id="copy-dispatch-btn" class="p-1 rounded-md hover:bg-surface-container text-secondary hover:text-primary transition-colors cursor-pointer" title="Copy Field Dispatch">
+                    <span class="material-symbols-outlined text-[16px]" id="copy-icon">content_copy</span>
+                  </button>
+                  <button id="read-dispatch-btn" class="p-1 rounded-md hover:bg-surface-container text-secondary hover:text-primary transition-colors cursor-pointer" title="Listen to Dispatch">
+                    <span class="material-symbols-outlined text-[16px]" id="audio-read-icon">volume_up</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between text-[10px] font-mono text-outline pt-0.5">
+              <span id="dispatch-engine-badge">Engine: Gemma 2:2B (Offline / WebGPU / Heuristic)</span>
+              <span class="text-emerald-700 font-semibold">100% Zero-Cloud Private</span>
+            </div>
+          </div>
+        </div>
+
         <!-- You Found Today Horizontal Scroll Stream -->
         <div class="mt-space-lg flex flex-col">
           <div class="px-margin flex items-center justify-between mb-space-sm">
@@ -150,7 +199,7 @@ export class AdventureCompleteView {
       </div>
     `;
 
-    this.bindEvents();
+    this.bindEvents(recentObservations);
   }
 
   private renderSpecimenCards(observations: FieldObservation[]): string {
@@ -199,7 +248,7 @@ export class AdventureCompleteView {
       .join('');
   }
 
-  private bindEvents(): void {
+  private bindEvents(observations: FieldObservation[] = []): void {
     const loopMapCard = this.container.querySelector('#loop-map-card');
     loopMapCard?.addEventListener('click', () => {
       if (this.onOpenMap) {
@@ -221,6 +270,97 @@ export class AdventureCompleteView {
     const newAdvBtn = this.container.querySelector('#new-adventure-btn');
     newAdvBtn?.addEventListener('click', () => {
       this.onStartAnother();
+    });
+
+    // Gemma Dispatch Storyteller Logic
+    const synthBtn = this.container.querySelector('#synthesize-dispatch-btn');
+    const synthSpinner = this.container.querySelector('#dispatch-spinner-icon');
+    const synthLabel = this.container.querySelector('#dispatch-btn-label');
+    const headlineEl = this.container.querySelector('#dispatch-headline');
+    const storyEl = this.container.querySelector('#dispatch-story');
+    const quoteEl = this.container.querySelector('#dispatch-quote');
+    const engineBadgeEl = this.container.querySelector('#dispatch-engine-badge');
+
+    synthBtn?.addEventListener('click', async () => {
+      if (synthSpinner && synthLabel && synthBtn) {
+        synthLabel.textContent = 'Gemma Reasoning...';
+        synthSpinner.classList.add('animate-spin');
+        synthBtn.setAttribute('disabled', 'true');
+
+        AudioFeedback.playTone('snapshot');
+
+        try {
+          const runner = getModelRunner();
+          if (runner.generateExpeditionDispatch) {
+            const dispatch = await runner.generateExpeditionDispatch({
+              minutes: this.sessionSummary?.minutes ?? 38,
+              distanceKm: this.sessionSummary?.distanceKm ?? 2.7,
+              discoveriesCount: this.sessionSummary?.discoveriesCount ?? 5,
+              phoneFreePercent: this.sessionSummary?.phoneFreePercent ?? 71,
+              specimens: observations.map((o) => ({
+                commonName: o.commonName,
+                scientificName: o.scientificName,
+                habitat: o.habitat
+              })),
+              trailName: 'Blackwood Ridge Circuit'
+            });
+
+            if (headlineEl) headlineEl.textContent = dispatch.title;
+            if (storyEl) storyEl.textContent = dispatch.story;
+            if (quoteEl) quoteEl.textContent = dispatch.excerpt;
+            if (engineBadgeEl) engineBadgeEl.textContent = `Engine: ${dispatch.modelUsed}`;
+            AudioFeedback.playTone('save');
+          }
+        } catch (err) {
+          console.warn('Dispatch synthesis notice:', err);
+        } finally {
+          synthLabel.textContent = 'Regenerate Dispatch';
+          synthSpinner.classList.remove('animate-spin');
+          synthBtn.removeAttribute('disabled');
+        }
+      }
+    });
+
+    // Copy dispatch to clipboard
+    const copyBtn = this.container.querySelector('#copy-dispatch-btn');
+    const copyIcon = this.container.querySelector('#copy-icon');
+    copyBtn?.addEventListener('click', () => {
+      const text = `${headlineEl?.textContent || ''}\n\n${storyEl?.textContent || ''}\n\n${quoteEl?.textContent || ''}`;
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(text);
+        if (copyIcon) {
+          copyIcon.textContent = 'check';
+          setTimeout(() => {
+            copyIcon.textContent = 'content_copy';
+          }, 1500);
+        }
+      }
+    });
+
+    // Read aloud via SpeechSynthesis
+    const readBtn = this.container.querySelector('#read-dispatch-btn');
+    const readIcon = this.container.querySelector('#audio-read-icon');
+    let isSpeaking = false;
+    readBtn?.addEventListener('click', () => {
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        if (isSpeaking) {
+          window.speechSynthesis.cancel();
+          isSpeaking = false;
+          if (readIcon) readIcon.textContent = 'volume_up';
+        } else {
+          const text = `${headlineEl?.textContent || ''}. ${storyEl?.textContent || ''}`;
+          const utterance = new SpeechSynthesisUtterance(text);
+          utterance.rate = 0.95;
+          utterance.pitch = 0.98;
+          utterance.onend = () => {
+            isSpeaking = false;
+            if (readIcon) readIcon.textContent = 'volume_up';
+          };
+          window.speechSynthesis.speak(utterance);
+          isSpeaking = true;
+          if (readIcon) readIcon.textContent = 'volume_off';
+        }
+      }
     });
 
     const cards = this.container.querySelectorAll('.debrief-specimen-card');

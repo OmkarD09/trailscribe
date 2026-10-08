@@ -18,6 +18,8 @@ export class AdventureMapView {
   private tileLayers: L.TileLayer[] = [];
   private activeLayerIndex: number = 0;
   private compassRotation: number = 0;
+  private breadcrumbPolyline: L.Polyline | null = null;
+  private trailheadMarker: L.Marker | null = null;
 
   private readonly layerConfigs = [
     {
@@ -151,6 +153,10 @@ export class AdventureMapView {
             <button aria-label="Compass Orientation" class="w-11 h-11 rounded-full bg-surface-card/95 backdrop-blur-md text-primary shadow-lg flex items-center justify-center active:scale-95 transition-transform cursor-pointer border border-outline-hairline/60 hover:bg-surface-card" id="map-compass-btn" title="Align to Magnetic North">
               <span class="material-symbols-outlined text-[20px] text-secondary" id="compass-needle-icon">explore</span>
             </button>
+            <!-- Trail Breadcrumbs / Backtrack Button -->
+            <button aria-label="Trail Breadcrumbs" class="w-11 h-11 rounded-full bg-surface-card/95 backdrop-blur-md text-primary shadow-lg flex items-center justify-center active:scale-95 transition-transform cursor-pointer border border-outline-hairline/60 hover:bg-surface-card" id="map-trail-btn" title="View Trail Breadcrumbs & Backtrack">
+              <span class="material-symbols-outlined text-[20px] text-tertiary-fixed-dim">route</span>
+            </button>
             <!-- Topographic Layers Button -->
             <button aria-label="Topographic Layers" class="w-11 h-11 rounded-full bg-surface-card/95 backdrop-blur-md text-primary shadow-lg flex items-center justify-center active:scale-95 transition-transform cursor-pointer border border-outline-hairline/60 hover:bg-surface-card" id="map-layers-btn" title="Cycle Map Layer">
               <span class="material-symbols-outlined text-[20px] text-secondary">layers</span>
@@ -265,6 +271,9 @@ export class AdventureMapView {
 
     // Add observation markers for all cataloged sightings
     this.renderObservationMarkers(validObs);
+
+    // Add trail breadcrumbs polyline & trailhead marker
+    this.renderBreadcrumbsTrail(validObs);
 
     // Safety re-check container size after DOM settlement
     setTimeout(() => {
@@ -429,6 +438,85 @@ export class AdventureMapView {
     }
   }
 
+  private renderBreadcrumbsTrail(observations: FieldObservation[]): void {
+    if (!this.map) return;
+
+    if (this.breadcrumbPolyline) {
+      try { this.breadcrumbPolyline.remove(); } catch {}
+      this.breadcrumbPolyline = null;
+    }
+    if (this.trailheadMarker) {
+      try { this.trailheadMarker.remove(); } catch {}
+      this.trailheadMarker = null;
+    }
+
+    let points: [number, number][] = [];
+
+    // Check for saved breadcrumbs from active adventure session
+    try {
+      const saved = localStorage.getItem('trailscribe_breadcrumbs');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          points = parsed.map((p: any) => [p.latitude, p.longitude] as [number, number]);
+        }
+      }
+    } catch {}
+
+    // Fallback if no stored breadcrumbs: construct realistic trail route connecting sightings to user location
+    if (points.length < 2) {
+      const sortedObs = [...observations]
+        .filter((o) => o.coordinates && typeof o.coordinates.latitude === 'number' && typeof o.coordinates.longitude === 'number')
+        .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+
+      if (sortedObs.length > 0) {
+        const first = sortedObs[0].coordinates!;
+        const trailhead: [number, number] = [first.latitude - 0.0032, first.longitude - 0.0028];
+        points = [
+          trailhead,
+          ...sortedObs.map((o) => [o.coordinates!.latitude, o.coordinates!.longitude] as [number, number]),
+          [this.userCoords.latitude, this.userCoords.longitude]
+        ];
+      } else {
+        const origin: [number, number] = [this.userCoords.latitude - 0.0035, this.userCoords.longitude - 0.003];
+        points = [origin, [this.userCoords.latitude, this.userCoords.longitude]];
+      }
+    }
+
+    // Render golden dashed route polyline
+    this.breadcrumbPolyline = L.polyline(points, {
+      color: '#cd8e2e',
+      weight: 3.5,
+      opacity: 0.85,
+      dashArray: '6, 8',
+      lineCap: 'round',
+      lineJoin: 'round'
+    }).addTo(this.map);
+
+    // Place Trailhead Origin marker pin
+    const startPoint = points[0];
+    const trailheadHtml = `
+      <div class="relative flex items-center justify-center -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+        <div class="px-2.5 py-1 rounded-full bg-primary text-vellum-bg text-[10.5px] font-mono font-bold flex items-center gap-1.5 shadow-lg border border-tertiary-fixed-dim/80">
+          <span class="material-symbols-outlined text-[14px] text-tertiary-fixed-dim">flag</span>
+          <span>TRAILHEAD</span>
+        </div>
+      </div>
+    `;
+
+    const trailheadIcon = L.divIcon({
+      className: 'trailhead-origin-pin',
+      html: trailheadHtml,
+      iconSize: [96, 26],
+      iconAnchor: [48, 13]
+    });
+
+    this.trailheadMarker = L.marker(startPoint, {
+      icon: trailheadIcon,
+      zIndexOffset: 850
+    }).addTo(this.map);
+  }
+
   private renderCarouselCards(): string {
     if (this.observations.length === 0) {
       return `
@@ -567,6 +655,27 @@ export class AdventureMapView {
       }
     });
 
+    // Trail Breadcrumbs Button: Fit full breadcrumb trail and highlight trailhead
+    const trailBtn = this.container.querySelector('#map-trail-btn');
+    trailBtn?.addEventListener('click', () => {
+      if (!this.map) return;
+      if (this.breadcrumbPolyline) {
+        try {
+          const bounds = this.breadcrumbPolyline.getBounds();
+          this.map.fitBounds(bounds, { padding: [45, 45], maxZoom: 16 });
+          if (toast) {
+            toast.textContent = 'Trail: Active Breadcrumb Route';
+            toast.classList.remove('opacity-0');
+            toast.classList.add('opacity-100');
+            setTimeout(() => {
+              toast.classList.remove('opacity-100');
+              toast.classList.add('opacity-0');
+            }, 1800);
+          }
+        } catch {}
+      }
+    });
+
     // Compass Button: Re-align North & pan to user position
     const compassBtn = this.container.querySelector('#map-compass-btn');
     const needleIcon = this.container.querySelector('#compass-needle-icon') as HTMLElement;
@@ -702,5 +811,7 @@ export class AdventureMapView {
     this.userAccuracyCircle = null;
     this.observationMarkers = [];
     this.tileLayers = [];
+    this.breadcrumbPolyline = null;
+    this.trailheadMarker = null;
   }
 }
