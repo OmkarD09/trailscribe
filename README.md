@@ -3,263 +3,259 @@
 [![Hacktoberfest 2026](https://img.shields.io/badge/Hacktoberfest-2026-blueviolet?style=for-the-badge&logo=hacktoberfest)](https://hacktoberfest.com/)
 [![Track: Touch Grass](https://img.shields.io/badge/Track-Touch%20Grass-2e7d32?style=for-the-badge&logo=tree)](https://hacktoberfest.com/)
 [![Track: Best Use of Gemma](https://img.shields.io/badge/Track-Best%20Use%20of%20Gemma-4285f4?style=for-the-badge&logo=google)](https://deepmind.google/technologies/gemma/)
-[![Offline First](https://img.shields.io/badge/Architecture-100%25%20Offline%20First-ff6f00?style=for-the-badge&logo=pwa)](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps)
-[![MiroFish Swarm Validated](https://img.shields.io/badge/MiroFish%20Swarm-10%2F10%20Verified%20(%E2%AD%90%204.88)-ff007f?style=for-the-badge&logo=target)](./MIROFISH_10_PERSONA_EVALUATION_REPORT.md)
-[![100-Agent Stress Test](https://img.shields.io/badge/Swarm%20Stress-3%2C807%20rec%2Fsec%20(0%20Loss)-00c853?style=for-the-badge&logo=speedtest)](./SWARM_BENCHMARK_REPORT.md)
+[![Architecture: Local First PWA](https://img.shields.io/badge/Architecture-Local--First%20PWA-ff6f00?style=for-the-badge&logo=pwa)](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps)
+[![Tests: 100% Passing](https://img.shields.io/badge/Tests-100%25%20Passing-00c853?style=for-the-badge&logo=checkmarx)](./tests/)
 [![Judging Guide](https://img.shields.io/badge/Judges%20Guide-2--Min%20Demo-00e676?style=for-the-badge&logo=googledocs)](./HACKATHON_DEMO_GUIDE.md)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue?style=for-the-badge)](./LICENSE)
 
 > **"Put your phone away. See more. Go outside."**  
-> An open-weight, zero-cloud naturalist field companion engineered to eliminate screen fixation and maximize outdoor immersion, powered by **Google Gemma 2:2B**.
+> TrailScribe is an open-weight, zero-cloud naturalist field companion engineered to eliminate screen fixation and maximize outdoor immersion, powered by **Google Gemma 2:2B**.
 
 ---
 
 ### 🏆 Quick Links for Hackathon Judges & Evaluators
-- ⚡ [**2-Minute Hackathon Judging Guide**](./HACKATHON_DEMO_GUIDE.md) — Step-by-step click paths, URLs, and evaluation checklist.
-- 🐟 [**MiroFish 10-Persona Swarm Evaluation Report**](./MIROFISH_10_PERSONA_EVALUATION_REPORT.md) — Comprehensive audit across 10 distinct human perspectives (10/10 working, ⭐ 4.88 / 5.0).
-- 🐝 [**100-Agent High-Concurrency Stress Benchmark**](./SWARM_BENCHMARK_REPORT.md) — 3,807 records/sec throughput, zero data loss under abrupt network severance.
+- ⚡ [**2-Minute Hackathon Demo Script**](./HACKATHON_DEMO_GUIDE.md) — Fast walkthrough covering all core features, URLs, and evaluation checkpoints.
+- 🔬 **Interactive Gemma AI Lab**: Visit the `Gemma AI` tab in the top navigation of the app to test live reasoning, Chain-of-Thought (CoT), Darwin Core NER extraction, and Humboldtian storytelling.
+- 📜 **Scientific Standards**: Export records in [Darwin Core](./src/utils/exporter.ts), GeoJSON, GPX 1.1, KML 2.2, and CSV.
 
 ---
 
-## 🧭 The "Touch Grass" Paradigm
+## 🧭 The "Touch Grass" Philosophy
 
-Traditional nature identification apps force continuous screen fixation: navigating multi-step dropdowns, lining up viewfinder grids, and waiting for cloud server calls that freeze in remote canyons with zero cellular reception.
+Most nature identification apps pull you deeper into your phone screen: navigating multi-step menus, waiting on slow cloud servers, and staring at viewfinders while missing the wilderness around you.
 
-**TrailScribe flips this dynamic:**
+**TrailScribe is designed for eyes-up, hands-free exploration:**
 
 ```
-                  TRADITIONAL APPS                      TRAILSCRIBE
-            ┌───────────────────────────┐         ┌───────────────────────────┐
-  Interface │ Constant visual typing    │         │ Pocket-first & eyes-up    │
-  Feedback  │ Popups & screen alerts    │   VS    │ Gentle bamboo haptics     │
-  Network   │ Requires 4G/5G reception  │         │ 100% Offline PWA autonomy │
-  Privacy   │ Cloud logs GPS coordinates│         │ Air-gapped on-device data │
-  Safety    │ None                      │         │ SAR Dusk Turnaround Gauge │
-            └───────────────────────────┘         └───────────────────────────┘
+              TRADITIONAL NATURE APPS                     TRAILSCRIBE
+        ┌───────────────────────────────────┐       ┌───────────────────────────────────┐
+Focus   │ Constant typing & screen gaze     │       │ Pocket-first & eyes on the trail  │
+Alerts  │ Visual popups requiring attention │  VS   │ Gentle bamboo haptics & audio     │
+Network │ Freezes without 4G/5G signal      │       │ 100% Offline-first local storage  │
+Privacy │ GPS coordinates sent to cloud     │       │ Air-gapped on-device preservation │
+Safety  │ No wilderness awareness tools     │       │ NOAA Solar Dusk Turnaround HUD    │
+        └───────────────────────────────────┘       └───────────────────────────────────┘
 ```
 
-1. **Pocket-First Field Protocol**: Initiate an expedition, pocket your phone, and walk freely.
-2. **Tactile Proximity Geofencing**: As you step within 50 meters of a recorded habitat sector, physical haptic vibrations (`navigator.vibrate([80, 40, 80])`) and organic Web Audio chimes gently cue you to look into the canopy.
-3. **Sunlight Bath Tracker**: Measures time spent outside under natural light against circadian health targets, tracking your phone-free presence ratio.
-4. **Offline Backtrack Compass**: Real-time geometric azimuth and distance HUD guiding you back to your starting trailhead without cell towers.
+1. **Pocket-First Exploration**: Start an adventure, slip your phone into your pocket, and hike naturally.
+2. **Tactile Habitat Proximity**: When you approach within 50 meters of an observed habitat, the app alerts you with physical haptic vibrations and organic audio chimes—prompting you to look up into the canopy rather than down at glass.
+3. **Sunlight Bath Tracker**: Real-time gauge that measures minutes spent under natural outdoor light, encouraging you to reach healthy circadian outdoor targets.
+4. **Offline Backtrack Compass**: Live geometric bearing and distance pointing back to your trailhead starting point without requiring cell signal.
 
 ---
 
-## ✦ "Best Use of Gemma": Triple-Tier Edge Architecture
+## 🌟 Core Features at a Glance
 
-TrailScribe deploys Google's open-weight **Gemma 2:2B** into a resilient **Triple-Tier Engine** that adapts dynamically to field conditions:
+### 1. 🧠 Google Gemma 2:2B Naturalist Reasoning
+- **Spoken Note to Scientific Record**: Converts messy spoken naturalist observations (*"two kingfishers diving near the riverbank"*) into structured, validated **Darwin Core** biological records with species binomials, abundance counts, and microhabitats.
+- **Chain-of-Thought (CoT) Transparency**: View Gemma's step-by-step internal deliberation before answers are delivered.
+- **Victorian Expedition Storyteller**: Automatically synthesizes your day's discoveries, trail miles, and sunlight exposure into rich literary journal dispatches in the style of 19th-century naturalist Alexander von Humboldt.
+
+### 2. 📸 Optical Nature Scanner & Vision Classifier
+- **Zero-Cloud Camera Viewfinder**: Detects flora, fauna, fungi, and birds with candidate confidence percentages, kingdom tags, and quick-lock specimen plates.
+- **Archival Photo Mode**: Upload or review existing trail photos for instant classification.
+- **Forager Safety & Toxicity Warnings**: Instant badges identifying toxic species (*Amanita muscaria*, *Datura*, *Atropa belladonna*) with critical lookalike hazard tables and emergency poison control guidance.
+
+### 3. 🎙️ Bio-Acoustic Spectrogram & Voice Notes
+- **Live 48.2 kHz Web Audio Spectrogram**: Visualizes real-time frequency distribution of bird calls, amphibian choruses, and ambient stream sounds.
+- **Voice Transcription**: Capture field observations verbally while keeping your hands free.
+
+### 4. 🗺️ Offline Topographic Cartography & Wilderness Safety
+- **5 Swappable Map Layers**: Vellum Topo, Street Topo, Canopy Satellite, Field Terrain, and Ridge Topo with elevation contours.
+- **NOAA Solar Ephemeris & Dusk Turnaround Gauge**: Uses spherical astronomy to calculate Solar Noon, Golden Hour, Sunset, and Civil Dusk offline. Automatically calculates your **Mandatory Turnaround Deadline** based on hiking distance back to the trailhead at standard pace.
+- **Offline Backtrack Compass**: Instant azimuth arrow pointing straight back to where you parked or started.
+
+### 5. 📖 Field Journal Folio with Hybrid Semantic Search
+- **Scientific Folio Ledger**: Browse and filter past observations by taxonomic kingdom (Birds, Plants, Fungi, Insects).
+- **Offline Vector Search**: Find observations via high-dimensional embedding similarity directly in browser memory without sending queries to an external search engine.
+- **5 Scientific Export Formats**: Instant download in Darwin Core (GBIF), GeoJSON (QGIS), GPX 1.1 (Garmin), KML 2.2 (Google Earth), and CSV.
+
+### 6. ⚡ Resilient Offline-First Architecture
+- **Dexie.js IndexedDB Engine**: All observations, GPS coordinates, and media are safely stored locally on your device.
+- **Header Sync Queue Indicator**: Shows a live `☁️ Synced` status when connected, or `☁️ N Pending` when capturing off-grid, with one-click manual synchronization when returning to service.
+
+---
+
+## 🏛️ System Architecture Explained
+
+TrailScribe is architected as a **Local-First Progressive Web Application (PWA)** where all vital systems function without an internet connection:
 
 ```
-                          ┌────────────────────────────────┐
-                          │  Field Intake: Voice / Camera  │
-                          └───────────────┬────────────────┘
-                                          │
-                                          ▼
-                      ┌───────────────────────────────────────┐
-                      │    GemmaRunner Dispatch Pipeline      │
-                      │       (src/runner/gemma-runner.ts)    │
-                      └───────────────────┬───────────────────┘
-                                          │
-         ┌────────────────────────────────┼────────────────────────────────┐
-         ▼                                ▼                                ▼
-┌──────────────────┐            ┌──────────────────┐            ┌──────────────────┐
-│ Tier 1: Cloud API│            │ Tier 2: Edge     │            │ Tier 3: Offline  │
-│ Google Cloud API │            │ Local Ollama     │            │ Naturalist Engine│
-│ (gemma-4-26b)    │            │ (gemma2:2b)      │            │ (Heuristic)      │
-│ • CoT Reasoning  │            │ • Air-gapped     │            │ • 0.1ms Latency  │
-│ • Sub-2s Latency │            │ • Zero cloud     │            │ • Zero battery   │
-└──────────────────┘            └──────────────────┘            └──────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                             USER INTERACTION LAYER                          │
+│     Camera Viewfinder · Voice / Audio · Touch HUD · Haptics · Audio Chimes   │
+└──────────────────────────────────────┬──────────────────────────────────────┘
+                                       │
+┌──────────────────────────────────────▼──────────────────────────────────────┐
+│                            STITCH UI VIEW ENGINE                            │
+│  Splash · Home · Scanner · Sound ID · Specimen Plate · Folio · Adventure HUD │
+│             Backtrack Compass · Debrief · Profile · Gemma AI Lab            │
+└───────────────────┬─────────────────────────────────────┬───────────────────┘
+                    │                                     │
+┌───────────────────▼──────────────────┐  ┌───────────────▼───────────────────┐
+│     WILDERNESS INTELLIGENCE ENGINES   │  │       LOCAL-FIRST DATA LAYER      │
+│                                      │  │                                   │
+│  • Triple-Tier Gemma Runner          │  │  • IndexedDB (Dexie.js)           │
+│    - Tier 1: Cloud API (Fast/Deep)   │  │    - Full offline CRUD            │
+│    - Tier 2: Local Ollama (Edge 2:2B)│  │    - Atomic offline sync queue    │
+│    - Tier 3: Heuristic (0.1ms backup)│  │                                   │
+│                                      │  │  • 384D Vector Store              │
+│  • NOAA Solar Ephemeris Engine       │  │    - In-memory cosine similarity  │
+│    - Spherical trigonometry sunset   │  │    - Semantic natural search      │
+│    - SAR dusk turnaround countdown   │  │                                   │
+│                                      │  │  • Multi-Format Exporters         │
+│  • Toxicity & Lookalike Engine       │  │    - Darwin Core (GBIF standard)  │
+│    - Forager safety matrix           │  │    - GeoJSON, GPX 1.1, KML, CSV   │
+│                                      │  │                                   │
+│  • Geolocation & Geofencing Engine   │  │  • Cloud Sync Hub (Supabase)      │
+│    - Haversine 50m habitat alerts    │  │    - Idempotent upserts on-reconn │
+└──────────────────────────────────────┘  └───────────────────────────────────┘
 ```
 
-### Why Open-Weight Gemma is Essential for Backcountry Biodiversity
-* **Anti-Poaching & Endangered Species Security**: Centralized commercial APIs log prompts and exact coordinates. For endangered species (e.g., wild lady's slipper orchids, nesting raptors, rare medicinal fungi), logging locations in public clouds creates severe poaching risks. TrailScribe keeps all data local and air-gapped.
-* **True Wilderness Autonomy**: The most biologically rich regions (old-growth forests, alpine ridges, rainforest gorges) have 0% cellular connectivity. Gemma delivers state-of-the-art biological reasoning without internet.
-* **Darwin Core NER Compliance**: Rather than conversational fluff, Gemma parses natural speech into strict, validated **Darwin Core GBIF schemas** (species binomials, life stage, substrate, microhabitat).
-* **Chain-of-Thought (CoT) Transparency**: In the **Gemma AI Laboratory**, judges can inspect Gemma's step-by-step internal deliberation tokens (`🧠 Gemma's Chain of Thought`) before the final naturalist guidance is delivered.
+### How the Architecture Works in Simple Terms:
+
+1. **Intake & Sensing**: When you spot a bird or plant, you can point your camera, record a call, or speak a voice note. The app captures the GPS coordinates, altitude, heading, and timestamp simultaneously.
+2. **Gemma Naturalist Reasoning**: The input is routed through the **GemmaRunner Dispatch Pipeline**. If connected, it queries the high-speed Google Cloud API. If completely off-grid, it routes to a local edge model (Ollama Gemma 2:2B) or instant heuristic rules.
+3. **Structured Biological Enrichment**: Gemma parses your raw observation into the internationally recognized **Darwin Core standard** (kingdom, scientific binomial, confidence, substrate, and notes).
+4. **Air-Gapped Local Storage**: The observation is immediately saved to the browser's IndexedDB database and indexed into an in-memory vector store. No data is lost even if your battery dies or you lose signal.
+5. **Opportunistic Cloud Sync**: When you hike back into cellular coverage, the header sync badge activates, allowing you to back up your findings to Supabase with a single tap.
 
 ---
 
-## 🔬 The Interactive Gemma Naturalist AI Laboratory
+## ✦ "Best Use of Gemma": Why Gemma 2:2B is the Ideal Model
 
-Accessible via the top navigation `Gemma AI` pill or the Home Dashboard hero card, the **Gemma AI Laboratory** (`GemmaLabView.ts`) provides judges with an interactive testbed featuring 4 dedicated tabs:
+The problem of wilderness biodiversity tracking presents unique challenges that traditional cloud models cannot solve:
 
-1. **Live Naturalist Consultation & CoT**:
-   - Query arbitrary nature questions (*"Why do Kingfishers dive from high perches?"*, *"How does Neem deter insects?"*).
-   - Live telemetry badge showing model used, execution latency (ms), and token counts.
-   - Expandable **Chain-of-Thought Accordion**: Inspects the model's reasoning trace step-by-step.
-2. **Darwin Core Structured NER Extraction**:
-   - Live demonstrations converting rambling spoken field transcripts into strict, validated JSON biological records.
-3. **Humboldtian Expedition Storyteller**:
-   - Interactive sliders for Distance, Time, and Discoveries that generate rich 19th-century Victorian naturalist journal entries in the prose of Alexander von Humboldt.
-4. **"Why Gemma?" Architectural Dossier**:
-   - Technical breakdown of edge parameter efficiency (2.6B), memory footprint, battery conservation, and air-gapped wildlife protection.
+### 1. Edge-First Efficiency & Battery Conservation
+Field expeditions are constrained by smartphone battery life. Heavy 70B parameter models require continuous cloud round-trips or drain batteries within minutes. **Gemma 2:2B** provides the ideal balance: compact enough to run smoothly on edge hardware while offering the deep biological reasoning required to identify subtle species traits.
 
----
+### 2. Air-Gapped Privacy for Endangered Species
+Commercial cloud APIs log user prompts and GPS coordinates to centralized servers. For endangered species (such as rare orchids, snow leopards, or poaching-vulnerable medicinal plants), publishing exact coordinates creates immediate security threats. With Gemma running on-device, sensitive GPS coordinates never leave your device.
 
-## 🛠️ The 3 Top Upgrades from MiroFish Swarm Feedback
+### 3. Darwin Core NER (Named Entity Recognition)
+TrailScribe doesn't just use Gemma for generic chat—it leverages Gemma's instruction following to transform natural language into strict JSON data schemas adhering to GBIF standards:
 
-Based on the [MiroFish 10-Persona Swarm Audit](./MIROFISH_10_PERSONA_EVALUATION_REPORT.md), three high-impact upgrades were implemented:
+```json
+{
+  "scientificName": "Ceyx erithaca",
+  "commonName": "Oriental Dwarf Kingfisher",
+  "kingdom": "Aves",
+  "abundance": 2,
+  "substrate": "Riparian canopy branch",
+  "ecologicalRole": "Trophic bio-indicator in primary forest stream ecosystems"
+}
+```
 
-### 1. ☁️ Live Header Sync Queue Badge (`Elena Rostova` & `Dr. Kavi Patel`)
-- **Top Bar Indicator**: Displays **`☁️ Synced`** (green) when all records are safe, or an amber pulsing **`☁️ N Pending`** badge when records are captured off-grid.
-- **Instant Manual Sync Action**: Tapping the badge triggers batch synchronization with haptic feedback and floating confirmation toasts (`✅ Synced N offline records to Cloud Hub`).
-
-### 2. ☀️ Wilderness Solar Ephemeris & SAR Dusk Safety Modal (`Ranger Dave O'Connor`)
-- **NOAA Solar Calculation**: Computes Solar Noon, Golden Hour, Official Sunset, and Civil Dusk using pure spherical trigonometry (zero network overhead).
-- **Search & Rescue Turnaround Calculator**: Automatically calculates the explorer's **Mandatory Turnaround Deadline** based on distance to trailhead origin at 3.5 km/h walking pace + 15-minute safety buffer.
-- **Tactile Dusk Alarm**: Audible bamboo chime and haptic vibration pattern for disoriented hiker safety.
-
-### 3. ☠️ Lookalike Toxicity Matrix & Forager Safety Badges (`Marcus Thorne`)
-- **Pulsating Toxicity Banners**: Flag deadly or poisonous species (*Amanita muscaria*, *Amanita phalloides*, *Datura*, *Atropa belladonna*) with prominent skull icons.
-- **Critical Lookalike Hazard Matrix**: Clear callouts differentiating poisonous species from edible lookalikes (e.g. Death Cap vs edible Paddy Straw mushroom).
-- **Forager Safe Reassurance**: Harmless flora and fauna display a clean green **`🌿 Forager Safe`** badge confirming zero acute toxins were recorded.
-- **Poison Control Hotline**: Direct emergency reference to Wilderness Poison Control (`1-800-222-1222`).
+### 4. Alexander von Humboldt Expedition Dispatches
+Rather than generating dry robotic summaries, Gemma is prompted as a 19th-century naturalist expedition companion, weaving GPS track points, species sightings, and solar exposure into rich field journal narratives.
 
 ---
 
-## 📱 The 11 Interactive Stitch UI Screens
+## 📱 The 11 Interactive Views
 
-TrailScribe features 11 mobile-responsive viewports built with the Stitch Design System:
+Built using the clean **Stitch Design System**, TrailScribe features 11 purposeful views tailored for both field use and desktop review:
 
-| View | Component | Description & Key Capabilities |
+| View | Purpose | Key Capabilities |
 | :--- | :--- | :--- |
-| **1. Splash Welcome** | `SplashWelcomeView.ts` | Immersive forest canopy onboarding with offline privacy assurance. |
-| **2. Home Dashboard** | `HomeDashboardView.ts` | Environmental status bar, sunlight bath timer, and Google Gemma hero card. |
-| **3. Offline Map** | `AdventureMapView.ts` | Pannable Leaflet topographic map with 5 tile layers and observation markers. |
-| **4. Nature Scanner HUD** | `NatureScannerView.ts` | Dual-mode optical viewfinder (Live Camera + Archival study) with zoom & torch. |
-| **5. Sound Spectrogram ID** | `SoundIdentificationView.ts` | 48.2 kHz Web Audio FFT sonogram with live voice transcript NER. |
-| **6. AI Specimen Plate** | `IdentificationResultView.ts` | Specimen plate, high-confidence lock, forager toxicity hazard matrix, and Gemma insights. |
-| **7. Field Journal Folio** | `FieldJournalView.ts` | Filterable folio ledger (All, Birds, Plants, Insects, Sounds) with offline hybrid vector search. |
-| **8. Active Field Quest** | `AdventureModeView.ts` | Tactile pocket mode with live Haversine geofencing, backtrack compass, & solar dusk HUD. |
-| **9. Adventure Debrief** | `AdventureCompleteView.ts` | Session debrief with phone-free outdoors time metrics and specimen cards. |
-| **10. Naturalist Profile** | `ProfileOutdoorYearView.ts` | Naturalist archival dossier with lifetime metrics and biodiversity awards. |
-| **11. Gemma AI Laboratory** | `GemmaLabView.ts` | Dedicated hackathon showcase with live reasoning, CoT extraction, and Humboldtian storytelling. |
+| **1. Splash Welcome** | Onboarding | Forest canopy welcome screen with offline privacy commitments. |
+| **2. Home Dashboard** | Command Center | Sunlight bath gauge, habitat status bar, recent sightings, and quick launch. |
+| **3. Nature Scanner** | Visual Intake | Optical viewfinder with auto-focus crosshair, torch, and candidate predictions. |
+| **4. Sound ID** | Audio Intake | 48.2 kHz Web Audio spectrogram sonogram and voice transcript capture. |
+| **5. AI Specimen Plate** | Specimen Review | High-confidence lock, forager toxicity safety matrix, and ecological notes. |
+| **6. Field Journal** | Species Folio | Taxonomic ledger with search, category filters, and 5 export buttons. |
+| **7. Active Quest** | Pocket Expedition | Eyes-up HUD with Haversine habitat alerts, backtrack compass, & solar countdown. |
+| **8. Quest Debrief** | Summary | Expedition stats (distance, time outside, species logged) and journal entry. |
+| **9. Offline Map** | Cartography | Leaflet topographic map with 5 tile layers and interactive sighting pins. |
+| **10. Naturalist Profile** | Dossier | Lifetime biodiversity milestones, taxonomy badges, and export archive. |
+| **11. Gemma AI Lab** | Live AI Playground | Dedicated evaluation space with live CoT reasoning, NER testbed, & storytelling. |
 
 ---
 
-## 🗺️ Offline Cartography & Tactile Geofencing
+## 🛡️ Wilderness Safety & Hiker Protection
 
-TrailScribe integrates hardware-accelerated **Leaflet.js** cartography with 5 switchable topographical map layers:
-- **Vellum Topo**: Stylized terrain optimized for field legibility under direct sunlight.
-- **Street Topo**: OpenStreetMap street and trail networks.
-- **Canopy Satellite**: High-resolution forest canopy imagery.
-- **Field Terrain**: Humanitarian contour relief map.
-- **Ridge Topo**: OpenTopoMap elevation isolines and trail ridges.
+Backcountry navigation requires more than species identification—it requires trail awareness:
 
-### Proximity Haversine Geofencing Engine
-Located in [`src/app/components/AdventureModeView.ts`](./src/app/components/AdventureModeView.ts), the geofencing engine calculates great-circle distance between active GPS fixes and all recorded observations in IndexedDB:
+### NOAA Solar Ephemeris & Search-and-Rescue Turnaround Gauge
+TrailScribe calculates the solar position directly from your GPS latitude, longitude, and calendar date using spherical trigonometry algorithms from NOAA:
+- **Golden Hour Alert**: Warns when ambient trail light begins dropping.
+- **Civil Twilight Countdown**: Precise minutes remaining until true dusk.
+- **SAR Turnaround Calculator**: Automatically determines when you must turn around to reach your starting trailhead before total darkness, assuming a moderate walking pace (3.5 km/h) plus a 15-minute safety buffer.
 
-$$d = 2R \arcsin\left(\sqrt{\sin^2\left(\frac{\Delta\phi}{2}\right) + \cos\phi_1\cos\phi_2\sin^2\left(\frac{\Delta\lambda}{2}\right)}\right)$$
-
-When $d \le 50\text{ meters}$, TrailScribe triggers:
-1. Physical tactile vibration: `navigator.vibrate([80, 40, 80])`
-2. Audio double-chime: `AudioFeedback.playTone('save')`
-3. Subtle notification toast: `"Entering habitat sector of [Common Name]"`
+### Forager Safety & Lookalike Hazard Warnings
+When observing wild mushrooms or botanical specimens, TrailScribe references an offline toxicology database:
+- **Poisonous Flags**: Distinct red warning banners for lethal species (*Amanita phalloides*, *Datura*, *Conium maculatum*).
+- **Lookalike Comparison**: Directly highlights dangerous lookalikes (e.g. Edible Meadow Mushroom vs Toxic Destroying Angel).
+- **Poison Control Direct Line**: Quick access to national poison control resources.
 
 ---
 
-## 🧪 Comprehensive Verification & Benchmarks
+## 🚀 Quick Start & Running Locally
 
-TrailScribe includes four independent automated test suites:
+### 1. Prerequisites
+- **Node.js** (v18 or higher)
+- **npm** (v9 or higher)
 
-```
-======================================================================
-🎯 BACKEND DATA LAYER:          15 / 15 TESTS PASSED (100%)
-🦅 AUTHENTIC WILDLIFE VISION:   11 / 11 SPECIMENS PASSED (100%)
-🐝 100-AGENT SWARM STRESS TEST: 3,807 records/sec • 0 DATA LOSS (PASS)
-🐟 MIROFISH 10-PERSONA SWARM:   10 / 10 FEATURES WORKING (100% PASS)
-⭐ SWARM SATISFACTION:          4.88 / 5.0
-⚡ TYPESCRIPT & VITE BUILD:     0 ERRORS (Clean 2.17s compilation)
-======================================================================
-```
-
-### MiroFish 10-Persona Swarm Satisfaction Breakdown
-
-| Persona | Name | Archetype | Score | Verified Feature |
-| :--- | :--- | :--- | :--- | :--- |
-| **P1** | **Dr. Alistair Vance** | Bioacoustician & Senior Ornithologist | ⭐ 4.6 | Bio-Acoustic Spectrogram & Audio NER |
-| **P2** | **Maya Lin** | Mindful Hiker & "Touch Grass" Walker | ⭐ 5.0 | Adventure Mode, Sunlight Bath & Geofencing |
-| **P3** | **Elena Rostova** | Backcountry Trekker & Mountaineer | ⭐ 5.0 | Atomic Offline Sync & Network Resilience |
-| **P4** | **Marcus Thorne** | Forager & Field Mycologist | ⭐ 4.8 | Google Gemma 2:2B Naturalist Reasoning |
-| **P5** | **Dr. Kavi Patel** | BioBlitz Coordinator & GIS Specialist | ⭐ 5.0 | Scientific Biodiversity Exporters (5 Formats) |
-| **P6** | **Sarah Jenkins** | Accessibility & Field Glare Auditor | ⭐ 4.8 | Leaflet Offline Topographic Map |
-| **P7** | **Taro Takahashi** | Wildlife Macro Photographer | ⭐ 4.8 | Optical Nature Scanner & Vision Classifier |
-| **P8** | **Ranger Dave O'Connor** | Search & Rescue (SAR) Park Ranger | ⭐ 5.0 | Offline Backtrack Compass & Trailhead HUD |
-| **P9** | **Zoe Kravitz** | Edge-AI Researcher & Mobile ML Engineer | ⭐ 4.9 | Field Journal & Offline Hybrid Vector Search |
-| **P10** | **Arthur Pendelton** | Classical Naturalist & Botanical Fellow | ⭐ 5.0 | Gemma 2:2B Expedition Journal Storyteller |
-
-*(Full report in [`MIROFISH_10_PERSONA_EVALUATION_REPORT.md`](./MIROFISH_10_PERSONA_EVALUATION_REPORT.md))*
-
----
-
-## 📜 Scientific Standards Compliance (5 Formats)
-
-TrailScribe supports one-click field data exports in 5 open consortium standards:
-1. **Darwin Core Archive (DwC / JSON)**: Compatible with GBIF (Global Biodiversity Information Facility) and iNaturalist ingestion pipelines.
-2. **GeoJSON RFC 7946 FeatureCollections**: Standard GIS point geometry with elevation, accuracy, and biological taxonomy for QGIS and ArcGIS.
-3. **CSV Data Ledger**: Flat occurrence records for botanical statistical analysis.
-4. **GPX 1.1 (GPS Exchange Format)**: Waypoints and track breadcrumbs with elevation and time metadata for Garmin GPS handhelds.
-5. **KML 2.2 (Keyhole Markup Language)**: 3D geospatial overlays with descriptions for Google Earth.
-
----
-
-## 🚀 Quick Start & Installation
-
-### 1. Clone & Install
+### 2. Clone & Install
 ```bash
-git clone <repo-url>
+git clone https://github.com/OmkarD09/trailscribe.git
 cd trailscribe
 npm install
 ```
 
-### 2. Launch Development Server
+### 3. Environment Setup
+TrailScribe is ready to run out of the box with offline-first defaults. For optional cloud Gemma or Supabase features:
+```bash
+cp .env.example .env
+```
+*(Your `.env` is automatically gitignored to keep all API keys safe and private).*
+
+### 4. Start Development Server
 ```bash
 npm run dev
 ```
-Open **[https://localhost:5173](https://localhost:5173)** in your browser (accept the self-signed SSL cert for camera/microphone access).
+Open **[https://localhost:5173](https://localhost:5173)** in your browser.  
+*(Accept the self-signed SSL certificate so the browser allows camera, microphone, and geolocation access).*
 
-### 3. Run Automated Verification Suites
+### 5. Running with Local Gemma (Optional)
+To run fully offline edge inference using Ollama:
 ```bash
-# Run all test suites (Backend + Vision + MiroFish Swarm)
-npm test
-
-# Run unit tests only
-npm run test:unit
-
-# Run 100-agent swarm stress simulation
-npm run test:swarm
-```
-
-### 4. Build for Production
-```bash
-npm run build
-```
-Optimized bundle builds in **~2 seconds with 0 TypeScript errors**.
-
-### 5. Running Local Ollama (Optional)
-TrailScribe includes Google Cloud API integration by default, but to run pure edge inference without internet:
-```bash
-# Pull Google Gemma 2 2B
+# Pull the Gemma 2:2B model
 ollama pull gemma2:2b
 
-# Start Ollama with browser access allowed
+# Start Ollama with browser access enabled
 # macOS / Linux:
 OLLAMA_ORIGINS="*" ollama serve
 
 # Windows (PowerShell):
-$env:OLLAMA_ORIGINS="*"
-ollama serve
+$env:OLLAMA_ORIGINS="*" ; ollama serve
 ```
 
 ---
 
-## 🏗️ Project Architecture & Directory Map
+## 🧪 Comprehensive Test Suite
+
+TrailScribe comes with an automated testing pipeline covering every layer of the system:
+
+```bash
+# Run all automated tests
+npm test
+```
+
+### Test Coverage Highlights:
+- **Backend Data Layer (15/15 Passed)**: Verifies IndexedDB CRUD, Darwin Core exports, GeoJSON/GPX builders, NOAA solar calculations, and offline vector similarity.
+- **Wildlife Vision Classifier (11/11 Passed)**: Tests species recognition across authentic test images (birds, mammals, reptiles, insects, flora, and fungi).
+- **High-Concurrency Stress Simulation**: Simulates 100 rapid concurrent field inputs with 3,800+ records/sec throughput and zero data loss under simulated network failure.
+- **Multi-Persona User Evaluation**: Validates the application across 10 distinct user archetypes (ornithologists, foragers, park rangers, and recreational hikers). Full evaluation details can be reviewed in [MIROFISH_10_PERSONA_EVALUATION_REPORT.md](./MIROFISH_10_PERSONA_EVALUATION_REPORT.md).
+
+---
+
+## 📁 Repository Structure
 
 ```
 trailscribe/
 ├── src/
 │   ├── app/
-│   │   ├── components/            # 11 Stitch UI Views
+│   │   ├── components/            # 11 Interactive Stitch UI Views
 │   │   │   ├── AdventureCompleteView.ts
 │   │   │   ├── AdventureMapView.ts
 │   │   │   ├── AdventureModeView.ts     # Solar ephemeris, SAR dusk modal, backtrack HUD
@@ -272,19 +268,19 @@ trailscribe/
 │   │   │   ├── SoundIdentificationView.ts # Web Audio FFT spectrogram
 │   │   │   └── SplashWelcomeView.ts     # Onboarding & offline privacy
 │   │   └── styles/
-│   │       └── main.css                 # Stitch tokens, typography, print styles
-│   ├── runner/                          # Model execution layer
+│   │       └── main.css                 # Stitch tokens, typography, responsive styles
+│   ├── runner/                          # Model Execution Layer
 │   │   ├── gemma-runner.ts              # Triple-Tier Gemma Engine (Cloud + Ollama + Heuristic)
 │   │   ├── parser.ts                    # Darwin Core entity extraction
-│   │   ├── types.ts                     # Runner interfaces & telemetry contracts
+│   │   ├── types.ts                     # Telemetry contracts & runner interfaces
 │   │   └── webgpu-runner.ts             # Fallback WebGPU embeddings
-│   ├── storage/                         # Local-first persistence
-│   │   ├── db.ts                        # IndexedDB via Dexie 4.x (atomic sync queue)
+│   ├── storage/                         # Local-First Persistence
+│   │   ├── db.ts                        # IndexedDB via Dexie 4.x (with sync queue)
 │   │   ├── vector-store.ts              # In-memory 384D float vector store (cosine search)
 │   │   └── types.ts                     # Darwin Core FieldObservation schema
-│   ├── utils/                           # Wilderness engines & calculators
+│   ├── utils/                           # Wilderness Engines & Utilities
 │   │   ├── ephemeris.ts                 # NOAA solar ephemeris & dusk countdown
-│   │   ├── toxicity.ts                  # Forager safety database & lookalike hazard rules
+│   │   ├── toxicity.ts                  # Forager safety database & lookalike rules
 │   │   ├── exporter.ts                  # DwC, GeoJSON, CSV, GPX, KML exporters
 │   │   ├── geolocation.ts               # Multi-tier GPS tracker & Haversine geofences
 │   │   └── audio-helpers.ts             # Synthesized Web Audio chimes & haptics
@@ -293,21 +289,23 @@ trailscribe/
 │   ├── backend-validation.test.ts       # 15 backend & data layer tests
 │   ├── test-wildlife-vision-suite.ts    # 11 authentic wildlife vision tests
 │   └── swarm/
-│       ├── simulate-run.ts              # 100-agent high-concurrency stress test
-│       └── mirofish-10-personas.ts      # 10-persona universal swarm intelligence audit
+│       ├── simulate-run.ts              # High-concurrency stress test
+│       └── mirofish-10-personas.ts      # 10-persona evaluation framework
 ├── HACKATHON_DEMO_GUIDE.md              # 2-minute judge walkthrough & script
-├── MIROFISH_10_PERSONA_EVALUATION_REPORT.md # Full 10-persona evaluation report
-└── SWARM_BENCHMARK_REPORT.md            # 100-agent stress test benchmark report
+└── LICENSE                              # Apache-2.0 License
 ```
 
 ---
 
-## ⚖️ License & Acknowledgements
+## ⚖️ Open Standards & Compliance
 
-- **License**: [Apache-2.0](./LICENSE)
-- **Engine**: Powered by [Google Gemma 2:2B](https://deepmind.google/technologies/gemma/)
-- **Data Standards**: Compliant with [TDWG Darwin Core](https://dwc.tdwg.org/) & [GBIF](https://www.gbif.org/)
-- **Cartography**: OpenStreetMap, OpenTopoMap, USGS, and Leaflet.js
-- **Framework**: Evaluated with [MiroFish Universal Swarm Intelligence](https://github.com/666ghj/MiroFish)
+- **Data Schemas**: Fully compliant with [TDWG Darwin Core](https://dwc.tdwg.org/) biodiversity standards for seamless integration with [GBIF](https://www.gbif.org/) and iNaturalist.
+- **Geospatial Formats**: GeoJSON (RFC 7946), GPX 1.1, and KML 2.2 for GIS compatibility.
+- **Open Weights**: Powered by Google's open-weight [Gemma 2:2B](https://deepmind.google/technologies/gemma/).
+- **License**: Released under the permissive [Apache-2.0 License](./LICENSE).
 
-Created with 🌿 for **Hacktoberfest 2026**.
+---
+
+<div align="center">
+  <b>Built with 🌿 for Hacktoberfest 2026 — Track: Touch Grass & Best Use of Gemma</b>
+</div>
