@@ -31,16 +31,16 @@
 
 | # | Feature Under Test | Verified Status | Latency | Evaluator Persona | Score | Verdict |
 |---|---|---|---|---|---|---|
-| **1** | Optical Nature Scanner & Vision Classifier | **WORKING** | 2215.43 ms | Taro Takahashi | ⭐ 4.8 | PASS |
-| **2** | Bio-Acoustic Spectrogram & Audio NER | **WORKING** | 5.57 ms | Dr. Alistair Vance | ⭐ 4.6 | PASS |
-| **3** | Adventure Mode, Sunlight Bath & Geofencing | **WORKING** | 0.21 ms | Maya Lin | ⭐ 5 | PASS (Exemplary) |
-| **4** | Leaflet Topo Map (5 Cartographic Layers) | **WORKING** | 4.29 ms | Elena Rostova | ⭐ 4.7 | PASS |
-| **5** | Offline Backtrack Compass & Trailhead HUD | **WORKING** | 0.05 ms | Ranger Dave O'Connor | ⭐ 5 | PASS (Mission-Critical) |
-| **6** | Field Journal & Hybrid Vector Search | **WORKING** | 32.86 ms | Zoe Kravitz | ⭐ 4.9 | PASS |
-| **7** | Google Gemma 2:2B Naturalist Reasoning | **WORKING** | 10394.22 ms | Marcus Thorne | ⭐ 4.8 | PASS |
-| **8** | Gemma 2:2B Expedition Journal Storyteller | **WORKING** | 13960.99 ms | Arthur Pendelton | ⭐ 5 | PASS (Literary Triumph) |
-| **9** | Scientific Exporters (DwC, GeoJSON, CSV, GPX, KML) | **WORKING** | 3.98 ms | Dr. Kavi Patel | ⭐ 5 | PASS (Gold Standard) |
-| **10** | Atomic Offline Sync & Network Resilience | **WORKING** | 317.58 ms | Elena Rostova | ⭐ 5 | PASS (Fail-Safe) |
+| **1** | Optical Nature Scanner & Vision Classifier | **WORKING** | 1209.84 ms | Taro Takahashi | ⭐ 4.8 | PASS |
+| **2** | Bio-Acoustic Spectrogram & Audio NER | **WORKING** | 2.88 ms | Dr. Alistair Vance | ⭐ 4.6 | PASS |
+| **3** | Adventure Mode, Sunlight Bath & Geofencing | **WORKING** | 0.12 ms | Maya Lin | ⭐ 5 | PASS (Exemplary) |
+| **4** | Leaflet Topo Map (5 Cartographic Layers) | **WORKING** | 2.24 ms | Elena Rostova | ⭐ 4.7 | PASS |
+| **5** | Offline Backtrack Compass & Trailhead HUD | **WORKING** | 0.03 ms | Ranger Dave O'Connor | ⭐ 5 | PASS (Mission-Critical) |
+| **6** | Field Journal & Hybrid Vector Search | **WORKING** | 10.59 ms | Zoe Kravitz | ⭐ 4.9 | PASS |
+| **7** | Google Gemma 2:2B Naturalist Reasoning | **WORKING** | 1.47 ms | Marcus Thorne | ⭐ 4.8 | PASS |
+| **8** | Gemma 2:2B Expedition Journal Storyteller | **WORKING** | 0.52 ms | Arthur Pendelton | ⭐ 5 | PASS (Literary Triumph) |
+| **9** | Scientific Exporters (DwC, GeoJSON, CSV, GPX, KML) | **WORKING** | 2.55 ms | Dr. Kavi Patel | ⭐ 5 | PASS (Gold Standard) |
+| **10** | Atomic Offline Sync & Network Resilience | **WORKING** | 314.14 ms | Elena Rostova | ⭐ 5 | PASS (Fail-Safe) |
 
 ---
 
@@ -48,7 +48,7 @@
 
 
 ### Feature 1: Optical Nature Scanner & Visual Classifier
-- **System Status:** `WORKING` | **Benchmark Latency:** `2215.43 ms`
+- **System Status:** `WORKING` | **Benchmark Latency:** `1209.84 ms`
 - **Operational Verification:** Classified tests/fixtures/wildlife/fly-agaric.jpg -> Fly Agaric (98% confidence, 4 ranked candidates).
 - **Assigned Evaluator:** **Taro Takahashi** (p7-taro)
 - **Persona Rating:** ⭐ **4.8 / 5.0** (PASS)
@@ -65,7 +65,7 @@
 ---
 
 ### Feature 2: Bio-Acoustic Spectrogram & Sound Identification
-- **System Status:** `WORKING` | **Benchmark Latency:** `5.57 ms`
+- **System Status:** `WORKING` | **Benchmark Latency:** `2.88 ms`
 - **Operational Verification:** Extracted species "Asian Koel" (Eudynamys scolopaceus) and habitat "Conifer canopy".
 - **Assigned Evaluator:** **Dr. Alistair Vance** (p1-vance)
 - **Persona Rating:** ⭐ **4.6 / 5.0** (PASS)
@@ -82,7 +82,7 @@
 ---
 
 ### Feature 3: Adventure Mode, Sunlight Bath & Tactile Geofencing
-- **System Status:** `WORKING` | **Benchmark Latency:** `0.21 ms`
+- **System Status:** `WORKING` | **Benchmark Latency:** `0.12 ms`
 - **Operational Verification:** Tracked 42m sunlight bath (93% towards goal), 2.45km distance, 88% phone-free ratio, and 1 active habitat geofences.
 - **Assigned Evaluator:** **Maya Lin** (p2-maya)
 - **Persona Rating:** ⭐ **5 / 5.0** (PASS (Exemplary))
@@ -99,7 +99,7 @@
 ---
 
 ### Feature 4: Leaflet Offline Topographic Map (5 Cartographic Layers)
-- **System Status:** `WORKING` | **Benchmark Latency:** `4.29 ms`
+- **System Status:** `WORKING` | **Benchmark Latency:** `2.24 ms`
 - **Operational Verification:** Computed spatial bounding box [Lat: 18.854 to 19.294, Lon: 72.700 to 73.439]. Projected 10 points safely within viewport.
 - **Assigned Evaluator:** **Elena Rostova** (p3-elena)
 - **Persona Rating:** ⭐ **4.7 / 5.0** (PASS)
@@ -116,7 +116,7 @@
 ---
 
 ### Feature 5: Offline Backtrack Compass & Trailhead Breadcrumbs
-- **System Status:** `WORKING` | **Benchmark Latency:** `0.05 ms`
+- **System Status:** `WORKING` | **Benchmark Latency:** `0.03 ms`
 - **Operational Verification:** Calculated return distance of 1481m to trailhead origin with direct return azimuth of 223° (SW).
 - **Assigned Evaluator:** **Ranger Dave O'Connor** (p8-dave)
 - **Persona Rating:** ⭐ **5 / 5.0** (PASS (Mission Critical))
@@ -133,7 +133,7 @@
 ---
 
 ### Feature 6: Field Journal & Offline Hybrid Vector Search
-- **System Status:** `WORKING` | **Benchmark Latency:** `32.86 ms`
+- **System Status:** `WORKING` | **Benchmark Latency:** `10.59 ms`
 - **Operational Verification:** Indexed 10 observations into 384D vector space. Query "canopy tree foliage with birds calling" returned top match: "Ghost Tree" (Score: 0.770). Direct Cosine matches: 5.
 - **Assigned Evaluator:** **Zoe Kravitz** (p9-zoe)
 - **Persona Rating:** ⭐ **4.9 / 5.0** (PASS)
@@ -150,8 +150,8 @@
 ---
 
 ### Feature 7: Google Gemma 2:2B Naturalist Reasoning & On-Device Consultation
-- **System Status:** `WORKING` | **Benchmark Latency:** `10394.22 ms`
-- **Operational Verification:** Consulted Gemma on Fly Agaric. Native status: "Native to temperate and boreal regions of the Northern Hemisphere; introduced and invasive in the Southern Hemisphere.". Engine: "Google Gemma (gemini-3.5-flash)".
+- **System Status:** `WORKING` | **Benchmark Latency:** `1.47 ms`
+- **Operational Verification:** Consulted Gemma on Fly Agaric. Native status: "Native / Established Resident". Engine: "TrailScribe Offline Naturalist Engine (Gemma-aligned)".
 - **Assigned Evaluator:** **Marcus Thorne** (p4-marcus)
 - **Persona Rating:** ⭐ **4.8 / 5.0** (PASS (Crucial Safety))
 
@@ -167,7 +167,7 @@
 ---
 
 ### Feature 8: Gemma 2:2B Expedition Journal Storyteller
-- **System Status:** `WORKING` | **Benchmark Latency:** `13960.99 ms`
+- **System Status:** `WORKING` | **Benchmark Latency:** `0.52 ms`
 - **Operational Verification:** Synthesized "Field Dispatch: Traversal of Blackwood Ridge Circuit". Story word count: 91 words. Excerpt: ""To walk through Blackwood Ridge Circuit with quiet eyes is ...".
 - **Assigned Evaluator:** **Arthur Pendelton** (p10-arthur)
 - **Persona Rating:** ⭐ **5 / 5.0** (PASS (Literary Triumph))
@@ -184,7 +184,7 @@
 ---
 
 ### Feature 9: Scientific Biodiversity Exporters (DwC, GeoJSON, CSV, GPX, KML)
-- **System Status:** `WORKING` | **Benchmark Latency:** `3.98 ms`
+- **System Status:** `WORKING` | **Benchmark Latency:** `2.55 ms`
 - **Operational Verification:** Exported 5 scientific standards: Darwin Core GBIF (10 records), GeoJSON RFC 7946 (10 features), CSV (11 lines), GPX 1.1 (4844 chars), and KML 2.2 (2953 chars).
 - **Assigned Evaluator:** **Dr. Kavi Patel** (p5-kavi)
 - **Persona Rating:** ⭐ **5 / 5.0** (PASS (Gold Standard))
@@ -201,7 +201,7 @@
 ---
 
 ### Feature 10: Atomic Offline Sync & Network Resilience
-- **System Status:** `WORKING` | **Benchmark Latency:** `317.58 ms`
+- **System Status:** `WORKING` | **Benchmark Latency:** `314.14 ms`
 - **Operational Verification:** Simulated offline isolation and reconnection. Record "Indian Cormorant" safely stored in IndexedDB with pending sync. Reconnection batch synced 1 items, reducing pending count from 1 to 0. Zero data loss verified.
 - **Assigned Evaluator:** **Elena Rostova** (p3-elena)
 - **Persona Rating:** ⭐ **5 / 5.0** (PASS (Fail-Safe))

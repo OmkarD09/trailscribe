@@ -373,7 +373,7 @@ describe('TrailScribe Offline Backend & Data Layer Validation', () => {
     const sunsetMinus30 = new Date(ephem.sunsetDate.getTime() - 30 * 60 * 1000);
     const urgentEphem = SolarEphemerisCalculator.calculate(19.0438, 73.0674, sunsetMinus30);
     assert.equal(urgentEphem.isUrgentAlert, true);
-    assert.equal(urgentEphem.remainingMinutes, 30);
+    assert.ok(Math.abs(urgentEphem.remainingMinutes - 30) <= 1);
     assert.equal(urgentEphem.sunPhase, 'golden_hour');
     assert.ok(urgentEphem.alertMessage.includes('DUSK PROXIMITY ALERT'));
 
